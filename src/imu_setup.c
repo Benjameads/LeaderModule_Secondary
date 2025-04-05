@@ -31,24 +31,40 @@ void setup_imu(spi_device_handle_t spi) {
         // Enable Gyroscope and Accelerometer
         clear_register_bits(spi, 0x07, 0x3F); // Clear DISABLE_ACCEL and DISABLE_GYRO
 
-        // Switch to USER_BANK_2 for gyro/accel settings
-        select_user_bank(spi, 2);
+        //////////////////// Set up Accelerometer and Gyroscope settings /////////////////////////////////////////////////
+            // Switch to USER_BANK_2 for gyro/accel settings
+            select_user_bank(spi, 2);
 
-        // Set Gyro sample rate to 100Hz
-        clear_register_bits(spi, 0x00, 0xFF); // Clear GYRO_SMPLRT_DIV bits
-        set_register_bits(spi, 0x00, 0x0A); // GYRO_SMPLRT_DIV = 10 (100Hz)
+            // Set Gyro sample rate to 100Hz
+            clear_register_bits(spi, 0x00, 0xFF); // Clear GYRO_SMPLRT_DIV bits
+            set_register_bits(spi, 0x00, 0x0A); // GYRO_SMPLRT_DIV = 10 (100Hz)
 
-        // Set Gyroscope Scale to ±2000 dps
-        set_register_bits(spi, 0x01, 0x07);  // Set GYRO_FS_SEL to 0b11 (±2000 dps) and fchoice to 1
+            // Set Gyroscope Scale to ±500 dps
+            clear_register_bits(spi, 0x01, GYRO_FS_SEL_BITS); // Clear GYRO_FS_SEL (bits 2:1) and fchoice (bit 3)
+            set_register_bits(spi, 0x01, GYRO_FS_SEL_500); // Set GYRO_FS_SEL = 0b01 (±500 dps) 
+            set_register_bits(spi, 0x01, 0x01); //Enable DLPF/FCHOICE (bit 0)
 
-        // Set Accel sample rate to 100Hz
-        clear_register_bits(spi, 0x09, 0x07); // Clear ACCEL_SMPLRT_DIV upper bits
-        clear_register_bits(spi, 0x10, 0xFF); // Clear ACCEL_SMPLRT_DIV lower bits
-        set_register_bits(spi, 0x10, 0x00); // ACCEL_SMPLRT_DIV = 10 (100Hz)
+            // Set Gyroscope Averaging to 16 sample averaging
+            clear_register_bits(spi, 0x02, 0x03); // Clear GYRO_CONFIG_1 register
+            set_register_bits(spi, 0x02, 0x04);   // Set GYRO_CONFIG_1 register to 16 sample averaging
 
-        // Set Accelerometer Scale to ±8g
-        clear_register_bits(spi, 0x14, 0x06);   // Clear both FS_SEL (bits 2:1)
-        set_register_bits(spi, 0x14, 0x05);     // Set FS_SEL = 0b10 and enable DLPF (bit 0)
+            // Set Accel sample rate to 100Hz
+            clear_register_bits(spi, 0x09, 0x07); // Clear ACCEL_SMPLRT_DIV upper bits
+            clear_register_bits(spi, 0x10, 0xFF); // Clear ACCEL_SMPLRT_DIV lower bits
+            set_register_bits(spi, 0x10, 0x00); // ACCEL_SMPLRT_DIV = 10 (100Hz)
+
+            // Set Accelerometer Scale to ±4g
+            clear_register_bits(spi, 0x14, ACCEL_FS_SEL_BITS); // Clear ACCEL_FS_SEL (bits 2:1) and fchoice (bit 3)
+            set_register_bits(spi, 0x14, ACCEL_FS_SEL_4G); // Set ACCEL_FS_SEL = 0b01 (±4g)
+            set_register_bits(spi, 0x14, 0x01); //Enable DLPF/FCHOICE (bit 0)
+
+            // Set Accelerometer Averaging to 16 samples
+            clear_register_bits(spi, 0x15, 0x03); // Clear DEC3_CFG bits
+            set_register_bits(spi, 0x15, 0x02); // Set DEC3_CFG bits to 0b10 16 sample averaging
+            set_register_bits(spi, 0x14, 0x38); // set ACCEL_DLPFCFG bits to 0b111 (4 sample averaging)
+            
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Switch back to USER_BANK_0
         select_user_bank(spi, 0);
@@ -56,8 +72,8 @@ void setup_imu(spi_device_handle_t spi) {
         ESP_LOGI(TAG, "Accelerometer and Gyroscope setup complete");
 
         // Call setup_fifo and setup_magnetometer functions Optionally
-        //setup_fifo(spi); // Set up FIFO buffer NOT WORKING***
         setup_magnetometer(spi); // Set up magnetometer settings
+        //setup_fifo(spi); // Set up FIFO buffer
     } 
     else {
         ESP_LOGE(TAG, "IMU Not Detected");
@@ -135,20 +151,31 @@ void setup_magnetometer(spi_device_handle_t spi) {
     ESP_LOGI(TAG, "Magnetometer setup complete");
 }
 
-// Function to set up the FIFO buffer 
-//*************This function is set up incorrectly, it will not work properly **************//
+// Function to set up the FIFO buffer for the IMU
 void setup_fifo(spi_device_handle_t spi) {
     // Reset FIFO
-    write_register(spi, 0x68, 0x1F);  // Assert reset
-    write_register(spi, 0x68, 0x00);  // Deassert reset
+    set_register_bits(spi, 0x68, 0x1F);  // Reset FIFO and DMP
+    vTaskDelay(pdMS_TO_TICKS(10));
+    clear_register_bits(spi, 0x68, 0x1F);  // Deassert reset
+    vTaskDelay(pdMS_TO_TICKS(10));   // Give hardware time to settle
 
-    // Enable FIFO Mode (0x69)
-    write_register(spi, 0x69, 0x00);  // Stream Mode (old data overwritten when full)
+    // Set FIFO to Stream Mode (new data overwrites old data when full)
+    clear_register_bits(spi, 0x69, 0x01);  // Clear Snapshot bit (bit 0)
+    // FIFO_MODE bits = 0 for Stream mode by default
 
-    // Enable FIFO for Gyro, Accel, and Temp
-    write_register(spi, 0x67, 0b00011110);
+    // Enable FIFO for:
+    // - Gyroscope (X, Y, Z)
+    // - Accelerometer (X, Y, Z)
+    // - Temperature (optional but default on)
+    // --> FIFO_EN_2: bits 1–5
+    clear_register_bits(spi, 0x67, 0x1F);  // Clear bits 1-5
+    set_register_bits(spi, 0x67, 0b00011110);     // Enable GYRO_XYZ, ACCEL
 
-    // Enable FIFO for Magnetometer
-    write_register(spi, 0x66, 0b00000001);
+    // Enable FIFO for external sensor (magnetometer via I2C)
+    // --> FIFO_EN_1: bit 0 = SLV0
+    clear_register_bits(spi, 0x66, 0xFF);  // Clear all bits just in case
+    set_register_bits(spi, 0x66, 0x01);    // Enable FIFO for I2C_SLV0 (magnetometer)
+
+    ESP_LOGI(TAG, "FIFO setup complete: Gyro, Accel, Magnetometer enabled");
 }
 

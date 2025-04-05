@@ -12,6 +12,18 @@
 
 #define NUMBER_OF_IMUS 6 // Number of IMUs
 
+#define ACCEL_2G_SCALE (1.0f/16384.0f) // Scale factor for ±2g accelerometer data
+#define ACCEL_4G_SCALE (1.0f/8192.0f) // Scale factor for ±4g accelerometer data
+#define ACCEL_8G_SCALE (1.0f/4096.0f) // Scale factor for ±8g accelerometer data
+#define ACCEL_16G_SCALE (1.0f/2048.0f) // Scale factor for ±16g accelerometer data
+
+#define GYRO_250_SCALE (1.0f/131.0f) // Scale factor for ±250 dps gyroscope data
+#define GYRO_500_SCALE (1.0f/65.5f) // Scale factor for ±500 dps gyroscope data
+#define GYRO_1000_SCALE (1.0f/32.8f) // Scale factor for ±1000 dps gyroscope data
+#define GYRO_2000_SCALE (1.0f/16.4f) // Scale factor for ±2000 dps gyroscope data
+
+#define MAG_SCALE 0.15f // Scale factor for magnetometer data
+
 struct IMUData {
     uint8_t st1;
     int16_t accelX, accelY, accelZ;
@@ -33,6 +45,6 @@ extern struct IMUDatalist imu_data[NUMBER_OF_IMUS];
 void read_imu_data(struct IMUDatalist * imu_data, int imu_index);
 void print_imu_data(struct IMUDatalist * imu_data, int imu_index);
 void print_imu_data_csv(struct IMUDatalist * imu_data, int imu_index);
-//void read_fifo(spi_device_handle_t spi);
+void read_fifo_data(struct IMUDatalist *imu_data, int imu_index);
 
 #endif // IMU_READ_H

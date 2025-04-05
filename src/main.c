@@ -71,10 +71,13 @@ void read_imu_data_task(void* arg) {
         if(running){
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
 
-            printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
+            if(sample == 0) {
+                printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
+            }
             for (uint8_t i = 0; i < 6; i++) {
                 //ESP_LOGI(TAG, "Reading IMU %d", i);
                 read_imu_data(imu_data, i); // Read and store data from each IMU
+                //read_fifo_data(imu_data, i); // Read and store FIFO data from each IMU
             }
 
             if(sample >= SAMPLE_SIZE){
