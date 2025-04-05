@@ -44,9 +44,9 @@ void setup_imu(spi_device_handle_t spi) {
             set_register_bits(spi, 0x01, GYRO_FS_SEL_500); // Set GYRO_FS_SEL = 0b01 (±500 dps) 
             set_register_bits(spi, 0x01, 0x01); //Enable DLPF/FCHOICE (bit 0)
 
-            // Set Gyroscope Averaging to 16 sample averaging
-            clear_register_bits(spi, 0x02, 0x03); // Clear GYRO_CONFIG_1 register
-            set_register_bits(spi, 0x02, 0x04);   // Set GYRO_CONFIG_1 register to 16 sample averaging
+            // // Set Gyroscope Averaging to 16 sample averaging
+            // clear_register_bits(spi, 0x02, 0x03); // Clear GYRO_CONFIG_1 register
+            // set_register_bits(spi, 0x02, 0x04);   // Set GYRO_CONFIG_1 register to 16 sample averaging
 
             // Set Accel sample rate to 100Hz
             clear_register_bits(spi, 0x09, 0x07); // Clear ACCEL_SMPLRT_DIV upper bits
@@ -58,10 +58,11 @@ void setup_imu(spi_device_handle_t spi) {
             set_register_bits(spi, 0x14, ACCEL_FS_SEL_4G); // Set ACCEL_FS_SEL = 0b01 (±4g)
             set_register_bits(spi, 0x14, 0x01); //Enable DLPF/FCHOICE (bit 0)
 
-            // Set Accelerometer Averaging to 16 samples
-            clear_register_bits(spi, 0x15, 0x03); // Clear DEC3_CFG bits
-            set_register_bits(spi, 0x15, 0x02); // Set DEC3_CFG bits to 0b10 16 sample averaging
-            set_register_bits(spi, 0x14, 0x38); // set ACCEL_DLPFCFG bits to 0b111 (4 sample averaging)
+            //Averaging requires the fifo and that is not fully setup
+            // // Set Accelerometer Averaging to 16 samples
+            // clear_register_bits(spi, 0x15, 0x03); // Clear DEC3_CFG bits
+            // set_register_bits(spi, 0x15, 0x02); // Set DEC3_CFG bits to 0b10 16 sample averaging
+            // set_register_bits(spi, 0x14, 0x38); // set ACCEL_DLPFCFG bits to 0b111 (4 sample averaging)
             
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +73,7 @@ void setup_imu(spi_device_handle_t spi) {
         ESP_LOGI(TAG, "Accelerometer and Gyroscope setup complete");
 
         // Call setup_fifo and setup_magnetometer functions Optionally
-        setup_magnetometer(spi); // Set up magnetometer settings
+        setup_magnetometer(spi); // Set up magnetometer settings ***************NOT WORKING YET*************
         //setup_fifo(spi); // Set up FIFO buffer
     } 
     else {
