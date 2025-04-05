@@ -128,23 +128,3 @@ esp_err_t burst_read_registers(spi_device_handle_t spi, uint8_t start_reg, uint8
 
     return ESP_OK;
 }
-
-
-// // Read multiple registers from the IMU over SPI
-// esp_err_t burst_read_registers(spi_device_handle_t spi, uint8_t start_reg, uint8_t* buffer, size_t length) {
-//     if (length == 0 || buffer == NULL) {
-//         return ESP_ERR_INVALID_ARG;
-//     }
-
-//     uint8_t tx = start_reg | 0x80; // Set read bit
-//     spi_transaction_t t = {
-//         .length = (length + 1) * 8,
-//         .tx_buffer = &tx,
-//         .rx_buffer = buffer
-//     };
-
-//     esp_err_t ret = spi_device_transmit(spi, &t);
-//     if (ret != ESP_OK) return ret;
-
-//     return ESP_OK;
-// }

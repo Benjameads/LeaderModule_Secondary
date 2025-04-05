@@ -22,8 +22,8 @@ void app_main() {
     
     vTaskDelay(pdMS_TO_TICKS(10000)); //10 seconds delay before starting the timer
 
-    init_uart_for_input(); // Initialize UART for input
-    ESP_LOGI(TAG, "UART initialized for input");
+    //init_uart_for_input(); // Initialize UART for input
+    //ESP_LOGI(TAG, "UART initialized for input");
 
     ESP_LOGI(TAG, "Initializing SPI");
     ESP_ERROR_CHECK(spi_init());
@@ -39,15 +39,6 @@ void app_main() {
         imu_data[i].spi = imu_handles[i]; // Assign SPI handle to each IMU data structure
         imu_data[i].label = imu_labels[i]; // Assign label to each IMU data structure
     }
-
-    // // Periodically read FIFO data from each IMU
-    // while (1) {
-    //     ESP_LOGI(TAG, "Reading FIFO Data");
-    //     for (int i = 0; i < 6; i++) {
-    //         read_fifo(imu_handles[i]);
-    //     }
-    //     vTaskDelay(pdMS_TO_TICKS(10)); // Delay to control read frequency
-    // }
 
     xTaskCreatePinnedToCore(read_imu_data_task, "imu_read", 6144, NULL, 5, &imu_read_task_handle, 1); // Create task to read IMU data (will be notified/started by timer)
 
@@ -79,7 +70,8 @@ void read_imu_data_task(void* arg) {
     while (1) {
         if(running){
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
-            //ESP_LOGI(TAG, "=== IMU Task: Reading all IMUs ===");
+
+            printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
             for (uint8_t i = 0; i < 6; i++) {
                 //ESP_LOGI(TAG, "Reading IMU %d", i);
                 read_imu_data(imu_data, i); // Read and store data from each IMU
@@ -89,18 +81,16 @@ void read_imu_data_task(void* arg) {
                 sample = 0; // Reset sample index if it exceeds the buffer size
                 running = false; // Stop the task after reading all IMUs for Sample Duration
 
-                printf("START\n"); // Print "START" to indicate the start of data output Matlab will read this and start recording data
+                printf("START PRINT\n"); // Print "START PRINT" to indicate the start of data output Matlab will read this and start recording data
                 for(uint8_t i = 0; i < 6; i++){
                     //print_imu_data(imu_data, i); // Print the data for each IMU
                     print_imu_data_csv(imu_data, i); // Print the data in CSV format for each IMU
                 }
                 printf("END\n"); // Print "END" to indicate the end of data output Matlab will read this and stop recording data
-
-                //ESP_LOGI(TAG, "IMU Data Will Print Here"); // Placeholder for actual data printing
-            }else{
+            }
+            else{
                 sample++; // Increment sample index (circular buffer)
             }
-            //ESP_LOGI(TAG, "=== IMU Task: Done reading all IMUs ===");
         }
         else{
             // // Check for UART input
