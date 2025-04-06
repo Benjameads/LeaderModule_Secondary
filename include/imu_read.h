@@ -25,10 +25,10 @@
 #define MAG_SCALE 0.15f // Scale factor for magnetometer data
 
 struct IMUData {
-    uint8_t st1;
     int16_t accelX, accelY, accelZ;
     int16_t gyroX, gyroY, gyroZ;
     int16_t temp;
+    uint8_t st1;
     int16_t magX, magY, magZ;
     uint8_t st2;
 };
