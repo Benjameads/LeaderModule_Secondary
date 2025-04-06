@@ -6,75 +6,79 @@
 #include "imu_setup.h"
 #include "imu_spi.h"
 
+const char* imu_labels[] = {"BOH", "THUMB", "INDEX", "MIDDLE", "RING", "PINKY"}; // Labels for IMUs
+
 // Function to set up the IMU with specific configurations
 //This function will set up accelerometr and gyroscope settings
-void setup_imu(spi_device_handle_t spi) {
-    uint8_t who_am_i = read_register(spi, 0x00);    // Read WHO_AM_I register
+void setup_imu(spi_device_handle_t * spi, int i) {
+    ESP_LOGI(TAG, "IMU %d: %s", i, imu_labels[i]);
+
+    uint8_t who_am_i = read_register(spi[i], 0x00);    // Read WHO_AM_I register
     ESP_LOGI(TAG, "IMU WHO_AM_I: 0x%X", who_am_i);
 
     if (who_am_i == 0xEA) { // Expected WHO_AM_I value
         ESP_LOGI(TAG, "IMU Detected");
         
         // Reset Device
-        set_register_bits(spi, 0x06, 0x80); // Set DEVICE_RESET bit in PWR_MGMT_1 register
-        while(read_register(spi, 0x06) & 0x80){ // Wait for DEVICE_RESET bit to clear
+        set_register_bits(spi[i], 0x06, 0x80); // Set DEVICE_RESET bit in PWR_MGMT_1 register
+        while(read_register(spi[i], 0x06) & 0x80){ // Wait for DEVICE_RESET bit to clear
             vTaskDelay(pdMS_TO_TICKS(1));
         }
 
         //Wake Device
-        while(!(read_register(spi, 0x06) & 0x40)){ // Wait for SLEEP bit to turn on
+        while(!(read_register(spi[i], 0x06) & 0x40)){ // Wait for SLEEP bit to turn on
             vTaskDelay(pdMS_TO_TICKS(1));
         }
-        clear_register_bits(spi, 0x06, 0x40); // Clear SLEEP bit (bit 6)
-        set_register_bits(spi, 0x06, 0x01);   // Set clock to auto-select value 1-5
+        clear_register_bits(spi[i], 0x06, 0x40); // Clear SLEEP bit (bit 6)
+        set_register_bits(spi[i], 0x06, 0x01);   // Set clock to auto-select value 1-5
 
         // Enable Gyroscope and Accelerometer
-        clear_register_bits(spi, 0x07, 0x3F); // Clear DISABLE_ACCEL and DISABLE_GYRO
+        clear_register_bits(spi[i], 0x07, 0x3F); // Clear DISABLE_ACCEL and DISABLE_GYRO
 
         //////////////////// Set up Accelerometer and Gyroscope settings /////////////////////////////////////////////////
             // Switch to USER_BANK_2 for gyro/accel settings
-            select_user_bank(spi, 2);
+            select_user_bank(spi[i], 2);
 
             // Set Gyro sample rate to 100Hz
-            clear_register_bits(spi, 0x00, 0xFF); // Clear GYRO_SMPLRT_DIV bits
-            set_register_bits(spi, 0x00, 0x0A); // GYRO_SMPLRT_DIV = 10 (100Hz)
+            clear_register_bits(spi[i], 0x00, 0xFF); // Clear GYRO_SMPLRT_DIV bits
+            set_register_bits(spi[i], 0x00, 0x0A); // GYRO_SMPLRT_DIV = 10 (100Hz)
 
             // Set Gyroscope Scale to ±500 dps
-            clear_register_bits(spi, 0x01, GYRO_FS_SEL_BITS); // Clear GYRO_FS_SEL (bits 2:1) and fchoice (bit 3)
-            set_register_bits(spi, 0x01, GYRO_FS_SEL_500); // Set GYRO_FS_SEL = 0b01 (±500 dps) 
-            set_register_bits(spi, 0x01, 0x01); //Enable DLPF/FCHOICE (bit 0)
+            clear_register_bits(spi[i], 0x01, GYRO_FS_SEL_BITS); // Clear GYRO_FS_SEL (bits 2:1) and fchoice (bit 3)
+            set_register_bits(spi[i], 0x01, GYRO_FS_SEL_500); // Set GYRO_FS_SEL = 0b01 (±500 dps) 
+            set_register_bits(spi[i], 0x01, 0x01); //Enable DLPF/FCHOICE (bit 0)
 
             // // Set Gyroscope Averaging to 16 sample averaging
-            // clear_register_bits(spi, 0x02, 0x03); // Clear GYRO_CONFIG_1 register
-            // set_register_bits(spi, 0x02, 0x04);   // Set GYRO_CONFIG_1 register to 16 sample averaging
+            // clear_register_bits(spi[i], 0x02, 0x03); // Clear GYRO_CONFIG_1 register
+            // set_register_bits(spi[i], 0x02, 0x04);   // Set GYRO_CONFIG_1 register to 16 sample averaging
 
             // Set Accel sample rate to 100Hz
-            clear_register_bits(spi, 0x09, 0x07); // Clear ACCEL_SMPLRT_DIV upper bits
-            clear_register_bits(spi, 0x10, 0xFF); // Clear ACCEL_SMPLRT_DIV lower bits
-            set_register_bits(spi, 0x10, 0x00); // ACCEL_SMPLRT_DIV = 10 (100Hz)
+            clear_register_bits(spi[i], 0x09, 0x07); // Clear ACCEL_SMPLRT_DIV upper bits
+            clear_register_bits(spi[i], 0x10, 0xFF); // Clear ACCEL_SMPLRT_DIV lower bits
+            set_register_bits(spi[i], 0x10, 0x00); // ACCEL_SMPLRT_DIV = 10 (100Hz)
 
             // Set Accelerometer Scale to ±4g
-            clear_register_bits(spi, 0x14, ACCEL_FS_SEL_BITS); // Clear ACCEL_FS_SEL (bits 2:1) and fchoice (bit 3)
-            set_register_bits(spi, 0x14, ACCEL_FS_SEL_4G); // Set ACCEL_FS_SEL = 0b01 (±4g)
-            set_register_bits(spi, 0x14, 0x01); //Enable DLPF/FCHOICE (bit 0)
+            clear_register_bits(spi[i], 0x14, ACCEL_FS_SEL_BITS); // Clear ACCEL_FS_SEL (bits 2:1) and fchoice (bit 3)
+            set_register_bits(spi[i], 0x14, ACCEL_FS_SEL_4G); // Set ACCEL_FS_SEL = 0b01 (±4g)
+            set_register_bits(spi[i], 0x14, 0x01); //Enable DLPF/FCHOICE (bit 0)
 
             //Averaging requires the fifo and that is not fully setup
             // // Set Accelerometer Averaging to 16 samples
-            // clear_register_bits(spi, 0x15, 0x03); // Clear DEC3_CFG bits
-            // set_register_bits(spi, 0x15, 0x02); // Set DEC3_CFG bits to 0b10 16 sample averaging
-            // set_register_bits(spi, 0x14, 0x38); // set ACCEL_DLPFCFG bits to 0b111 (4 sample averaging)
+            // clear_register_bits(spi[i], 0x15, 0x03); // Clear DEC3_CFG bits
+            // set_register_bits(spi[i], 0x15, 0x02); // Set DEC3_CFG bits to 0b10 16 sample averaging
+            // set_register_bits(spi[i], 0x14, 0x38); // set ACCEL_DLPFCFG bits to 0b111 (4 sample averaging)
             
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Switch back to USER_BANK_0
-        select_user_bank(spi, 0);
+        select_user_bank(spi[i], 0);
 
         ESP_LOGI(TAG, "Accelerometer and Gyroscope setup complete");
 
         // Call setup_fifo and setup_magnetometer functions Optionally
-        setup_magnetometer(spi); // Set up magnetometer settings ***************NOT WORKING YET*************
-        //setup_fifo(spi); // Set up FIFO buffer
+        setup_magnetometer(spi[i]); // Set up magnetometer settings
+        //setup_fifo(spi[i]); // Set up FIFO buffer ***************NOT WORKING YET*************
     } 
     else {
         ESP_LOGE(TAG, "IMU Not Detected");

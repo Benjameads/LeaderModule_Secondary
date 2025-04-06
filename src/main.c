@@ -17,8 +17,6 @@
 void read_imu_data_task(void* arg);
 
 void app_main() {
-
-    const char* imu_labels[] = {"Ring", "Index", "Middle", "Thumb", "BOH", "Pinky"}; // Labels for IMUs
     
     vTaskDelay(pdMS_TO_TICKS(10000)); //10 seconds delay before starting the timer
 
@@ -30,7 +28,7 @@ void app_main() {
 
     ESP_LOGI(TAG, "Initializing IMUs");
     for (int i = 0; i < 6; i++) {
-        setup_imu(imu_handles[i]);
+        setup_imu(imu_handles, i); // Set up each IMU
     }
 
     // Set up Data Structures for IMU data

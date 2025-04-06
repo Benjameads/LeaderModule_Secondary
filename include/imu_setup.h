@@ -4,6 +4,8 @@
 #include "driver/spi_master.h"
 #include "esp_err.h"
 
+extern const char* imu_labels[]; // Labels for IMUs
+
 #define ACCEL_FS_SEL_BITS (0x03 << 1) // Accelerometer full scale selection bits
 #define ACCEL_FS_SEL_2G   (0x00 << 1) // ±2g
 #define ACCEL_FS_SEL_4G   (0x01 << 1) // ±4g
@@ -16,7 +18,7 @@
 #define GYRO_FS_SEL_1000 (0x02 << 1) // ±1000 dps
 #define GYRO_FS_SEL_2000 (0x03 << 1) // ±2000 dps
 
-void setup_imu(spi_device_handle_t spi);
+void setup_imu(spi_device_handle_t * spi, int i);
 void setup_fifo(spi_device_handle_t spi);
 void setup_magnetometer(spi_device_handle_t spi);
 
