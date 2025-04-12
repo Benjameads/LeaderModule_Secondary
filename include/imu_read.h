@@ -6,9 +6,7 @@
 #include "freertos/task.h"
 #include "esp_err.h"
 
-#define SAMPLE_RATE 100 // Sample rate in Hz
-#define SAMPLE_DURATION 5 // 5 seconds of data
-#define SAMPLE_SIZE (SAMPLE_RATE * SAMPLE_DURATION) // Number of samples to read
+#define SAMPLE_SIZE 1 // Number of raw data samples to store
 
 #define NUMBER_OF_IMUS 6 // Number of IMUs
 
@@ -36,7 +34,7 @@ struct IMUData {
 struct IMUDatalist {
     struct IMUData data[SAMPLE_SIZE];
     int data_index; // Index to keep track of the current data point
-    const char* label; // Label for the IMU
+    uint8_t IMU_index; // Index of the IMU in the array
     spi_device_handle_t spi; // SPI device handle for the IMU
 };
 

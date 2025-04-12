@@ -6,8 +6,7 @@
 #include "imu_read.h"
 #include "imu_spi.h"
 #include "esp_task_wdt.h"
-
-struct IMUDatalist imu_data[NUMBER_OF_IMUS]; // Array to hold IMU data for each IMU
+#include "imu_setup.h"
 
 void read_imu_data(struct IMUDatalist * imu_data, int imu_index) {
     const int max_attempts = 100; // Timeout safety (adjust as needed)
@@ -55,7 +54,7 @@ void read_imu_data(struct IMUDatalist * imu_data, int imu_index) {
 void print_imu_data(struct IMUDatalist * imu_data, int imu_index) {
     for (int i = 0; i < SAMPLE_SIZE; i++) {
         ESP_LOGI(TAG, "IMU [%s]: Sample %d: Accel(X:%.3f, Y:%.3f, Z:%.3f) Gyro(X:%.3f, Y:%.3f, Z:%.3f) Mag(X:%.3f, Y:%.3f, Z:%.3f) ST1:0x%02X ST2: 0x%02X",
-                imu_data[imu_index].label, i,
+                imu_labels[imu_index], i,
                 imu_data[imu_index].data[i].accelX * ACCEL_4G_SCALE, imu_data[imu_index].data[i].accelY * ACCEL_4G_SCALE, imu_data[imu_index].data[i].accelZ * ACCEL_4G_SCALE, 
                 imu_data[imu_index].data[i].gyroX * GYRO_500_SCALE, imu_data[imu_index].data[i].gyroY * GYRO_500_SCALE, imu_data[imu_index].data[i].gyroZ * GYRO_500_SCALE,
                 imu_data[imu_index].data[i].magX * MAG_SCALE, imu_data[imu_index].data[i].magY * MAG_SCALE, imu_data[imu_index].data[i].magZ * MAG_SCALE, 
