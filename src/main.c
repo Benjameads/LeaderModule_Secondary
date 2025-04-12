@@ -5,28 +5,39 @@
 #include "driver/spi_master.h"
 #include "esp_log.h"
 #include "esp_task_wdt.h"
+#include "read_task.h"
+#include "orientation_task.h"
 #include "imu_setup.h"
 #include "imu_spi.h"
 #include "data_timer.h"
 #include "imu_read.h"
-#include "uart.h"
 #include "MadgwickAHRS.h"
 #include "imu_orientation.h"
 #include "quaternion_utils.h"
-#include "read_task.h"
-#include "orientation_task.h"
 
 //Timer handles
 esp_timer_handle_t data_timer;
 TaskHandle_t imu_read_task_handle; // Task handle for IMU reading task
-TaskHandle_t raw_to_orientation_task_handle; // Task handles for IMU reading and orientation tasks
+
+// Array to hold the CS pin numbers
+const gpio_num_t cs_pins[] = {IMU_CS_BOH, IMU_CS_THUMB, IMU_CS_INDEX, IMU_CS_MIDDLE, IMU_CS_RING, IMU_CS_PINKY};
+
+//SPI device handles for each IMU setup in main
+spi_device_handle_t imu_handles[6];
+
+// Semaphore for printing orientation data
+SemaphoreHandle_t print_mutex;
 
 // IMU Data Queue
-QueueHandle_t imuQueue; // holds pointers to IMUDatalist structs
+QueueHandle_t imuQueue; // holds an index of IMU data to be processed
 
 void app_main() {
     
     vTaskDelay(pdMS_TO_TICKS(10000)); //10 seconds delay before starting the timer
+
+    print_mutex = xSemaphoreCreateMutex();
+    imu_data_queue_init(); // Initialize the IMU data queue
+    ESP_LOGI(TAG, "IMU data queue initialized");
 
     //init_uart_for_input(); // Initialize UART for input
     //ESP_LOGI(TAG, "UART initialized for input");
@@ -37,13 +48,6 @@ void app_main() {
     ESP_LOGI(TAG, "Initializing IMUs");
     for (int i = 0; i < 6; i++) {
         setup_imu(imu_handles, i); // Set up each IMU
-    }
-
-    // Set up Data Structures for IMU data
-    for (int i = 0; i < 6; i++) {
-        imu_data[i].data_index = 0; // Initialize data index for each IMU
-        imu_data[i].spi = imu_handles[i]; // Assign SPI handle to each IMU data structure
-        imu_data[i].IMU_index = i; // Assign IMU index to each IMU data structure
     }
 
     // Configure the user button pin

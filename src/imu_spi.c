@@ -6,11 +6,6 @@
 #include "imu_spi.h"
 #include <string.h>
 
-// Array to hold the CS pin numbers
-const gpio_num_t cs_pins[] = {IMU_CS_BOH, IMU_CS_THUMB, IMU_CS_INDEX, IMU_CS_MIDDLE, IMU_CS_RING, IMU_CS_PINKY};
-
-spi_device_handle_t imu_handles[6];
-
 // Initialize SPI bus and configure each IMU as an SPI device
 esp_err_t spi_init() {
     spi_bus_config_t buscfg = {

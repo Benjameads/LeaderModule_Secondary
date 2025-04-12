@@ -1,9 +1,7 @@
 #ifndef ORIENTATION_TASK_H
 #define ORIENTATION_TASK_H
 
-#include "driver/spi_master.h"
-#include "imu_read.h"
-
+#include "MadgwickAHRS.h"
 
 #define SAMPLE_RATE 100 // Sample rate in Hz
 #define SAMPLE_DURATION 5 // 5 seconds of data
@@ -19,12 +17,16 @@ struct OrientationData {
 struct OrientationDatalist {
     struct OrientationData data[SAMPLE_SIZE_ORIENTATION];
     int data_index;               // current sample index
-    const char* label;            // IMU name
+    int imu_index;               // index of the IMU this data belongs to
+    Madgwick filter;             // Madgwick filter for this IMU
 };
 
 extern QueueHandle_t imuQueue; // holds pointers to IMUDatalist structs
-extern struct OrientationDatalist orientation_data[NUMBER_OF_IMUS]; // Array to hold orientation data for each IMU
+extern SemaphoreHandle_t print_mutex; // Mutex for printing orientation data
+// extern struct OrientationDatalist orientation_data[NUMBER_OF_IMUS]; // Array to hold orientation data for each IMU
 
 void imu_orientation_worker_task(void* arg);
+void print_orientation_csv(struct OrientationDatalist* orientation_lists);
+void imu_data_queue_init(void);
 
 #endif

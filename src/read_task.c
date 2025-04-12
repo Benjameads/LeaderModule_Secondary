@@ -1,6 +1,6 @@
+#include "read_task.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "read_task.h"
 #include "imu_read.h"
 #include "imu_spi.h"
 #include "orientation_task.h"
@@ -15,6 +15,13 @@ void read_imu_data_task(void* arg) {
     bool running = false; // Flag to indicate if the task is running
     uint16_t sample = 0; // Sample index for circular buffer
     struct IMUDatalist* imu_packet = NULL; // Pointer to IMU data packet
+
+    // Set up Data Structures for IMU data
+    for (int i = 0; i < 6; i++) {
+        imu_data[i].data_index = 0; // Initialize data index for each IMU
+        imu_data[i].spi = imu_handles[i]; // Assign SPI handle to each IMU data structure
+        imu_data[i].imu_index = i; // Assign IMU index to each IMU data structure
+    }
 
     while (1) {
         if(running){
@@ -32,7 +39,7 @@ void read_imu_data_task(void* arg) {
                 xQueueSendToBack(imuQueue, &imu_packet, portMAX_DELAY); // Send the data to the queue for processing
             }
 
-            if(sample >= SAMPLE_SIZE){
+            if(sample >= SAMPLE_SIZE_ORIENTATION-1){
                 sample = 0; // Reset sample index if it exceeds the buffer size
                 running = false; // Stop the task after reading all IMUs for Sample Duration
 

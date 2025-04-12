@@ -4,6 +4,7 @@
         "spi_master.h": "c",
         "esp_timer.h": "c",
         "task.h": "c",
-        "imu_spi.h": "c"
+        "imu_spi.h": "c",
+        "freertos.h": "c"
     }
 }

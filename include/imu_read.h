@@ -34,11 +34,11 @@ struct IMUData {
 struct IMUDatalist {
     struct IMUData data[SAMPLE_SIZE];
     int data_index; // Index to keep track of the current data point
-    uint8_t IMU_index; // Index of the IMU in the array
+    uint8_t imu_index; // Index of the IMU in the array
     spi_device_handle_t spi; // SPI device handle for the IMU
 };
 
-extern struct IMUDatalist imu_data[NUMBER_OF_IMUS];
+//extern struct IMUDatalist imu_data[NUMBER_OF_IMUS];
 
 void read_imu_data(struct IMUDatalist * imu_data, int imu_index);
 void print_imu_data(struct IMUDatalist * imu_data, int imu_index);
