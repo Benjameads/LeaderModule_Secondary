@@ -15,7 +15,7 @@ void read_imu_data_task(void* arg) {
         //Currently this IMU Data list holds lists for all 6 IMUS, and only one set of data is stored in each list
         //We used to store more data but after orientation analysis we only need the latest data for each IMU
 
-    esp_task_wdt_add(NULL);  // Register this task with the Task Watchdog Timer
+    //esp_task_wdt_add(NULL);  // Register this task with the Task Watchdog Timer
     bool running = false; // Flag to indicate if the task is running
     uint16_t sample = 0; // Sample index for circular buffer
     struct IMUDatalist* imu_packet = NULL; // Pointer to IMU data packet
@@ -32,9 +32,9 @@ void read_imu_data_task(void* arg) {
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
 
             // Was used to MATLAB data output
-            // if(sample == 0) {
-            //     printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
-            // }
+            if(sample == 0) {
+                printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
+            }
 
             for (uint8_t i = 0; i < 6; i++) {
                 //ESP_LOGI(TAG, "Reading IMU %d", i);
@@ -65,8 +65,20 @@ void read_imu_data_task(void* arg) {
                 ESP_LOGI(TAG, "User button pressed: starting IMU data reading");
                 ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             }
-            esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
-            vTaskDelay(pdMS_TO_TICKS(100)); // Debounce delay
+            //esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
+            vTaskDelay(pdMS_TO_TICKS(10)); // Debounce delay
         }
     }
+}
+
+void setup_btn(void) {
+    // Configure the user button pin
+    gpio_config_t io_conf = {
+        .pin_bit_mask = 1ULL << USER_BUTTON_GPIO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf); // Configure the GPIO pin
 }

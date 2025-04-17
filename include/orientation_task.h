@@ -7,6 +7,8 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 
+#define DEBUGPIN GPIO_NUM_1 // GPIO pin for debugging
+
 #define SAMPLE_RATE 100 // Sample rate in Hz
 #define SAMPLE_DURATION 5 // 5 seconds of data
 #define SAMPLE_SIZE_ORIENTATION (SAMPLE_RATE * SAMPLE_DURATION) // Number of samples to read

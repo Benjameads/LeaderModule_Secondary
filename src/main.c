@@ -53,19 +53,20 @@ void app_main() {
         setup_imu(imu_handles, i); // Set up each IMU
     }
 
-    // Configure the user button pin
-    gpio_config_t io_conf = {
-        .pin_bit_mask = 1ULL << USER_BUTTON_GPIO,
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
+    setup_btn(); // Set up the button for user input
+
+    gpio_config_t debugpin_conf = {
+        .pin_bit_mask = 1ULL << DEBUGPIN,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE
     };
-    gpio_config(&io_conf); // Configure the GPIO pin
+    gpio_config(&debugpin_conf); // Configure GPIO pin for output
 
     xTaskCreatePinnedToCore(read_imu_data_task, "imu_read", 6144, NULL, 5, &imu_read_task_handle, 1); // Create task to read IMU data (will be notified/started by timer)
-    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker0", 4096, NULL, 4, NULL, 0);
-    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker1", 4096, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker0", 8192, NULL, 4, NULL, 0);
+    //xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker1", 8192, NULL, 4, NULL, 1);
 
 
     // Set up periodic data timer
