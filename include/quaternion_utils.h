@@ -1,4 +1,3 @@
-
 #ifndef QUATERNION_UTILS_H
 #define QUATERNION_UTILS_H
 

@@ -3,6 +3,7 @@
 
 #include "driver/spi_master.h"
 #include "esp_err.h"
+#include "driver/gpio.h"
 
 // Logging tag for debugging
 #define TAG "IMU_SENSOR"

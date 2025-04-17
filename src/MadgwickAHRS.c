@@ -13,9 +13,7 @@ void MadgwickInit(Madgwick* state) {
     state->q[3] = 0.0f;
 }
 
-void MadgwickAHRSupdate(Madgwick* state, float gx, float gy, float gz,
-                        float ax, float ay, float az,
-                        float mx, float my, float mz) {
+void MadgwickAHRSupdate(Madgwick* state, float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
     float q1 = state->q[0], q2 = state->q[1], q3 = state->q[2], q4 = state->q[3];
     float recipNorm, s1, s2, s3, s4;
     float hx, hy, _2bx, _2bz;

@@ -1,16 +1,12 @@
 
 #include "imu_orientation.h"
+#include "MadgwickAHRS.h"
 #include "quaternion_utils.h"
 #include <math.h>
 
 #define RAD2DEG(x) ((x) * 57.2957795f)
 
-void update_imu_orientation_from_raw(
-    Madgwick* filter,
-    const struct IMUData* sample,
-    float dt,
-    float* yaw_deg, float* pitch_deg, float* roll_deg
-) {
+void update_imu_orientation_from_raw( Madgwick* filter, const struct IMUData* sample, float dt, float* yaw_deg, float* pitch_deg, float* roll_deg) {
     float ax = sample->accelX * ACCEL_4G_SCALE;
     float ay = sample->accelY * ACCEL_4G_SCALE;
     float az = sample->accelZ * ACCEL_4G_SCALE;

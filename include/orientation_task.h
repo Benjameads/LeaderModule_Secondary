@@ -2,6 +2,10 @@
 #define ORIENTATION_TASK_H
 
 #include "MadgwickAHRS.h"
+#include "Freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #define SAMPLE_RATE 100 // Sample rate in Hz
 #define SAMPLE_DURATION 5 // 5 seconds of data

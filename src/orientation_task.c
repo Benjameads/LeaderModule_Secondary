@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include "esp_task_wdt.h"
 #include "orientation_task.h"
+#include "imu_orientation.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "imu_read.h"
 #include "imu_spi.h"
 #include "MadgwickAHRS.h"

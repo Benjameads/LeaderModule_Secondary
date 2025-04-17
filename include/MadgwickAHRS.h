@@ -9,8 +9,6 @@ typedef struct {
 } Madgwick;
 
 void MadgwickInit(Madgwick* state);
-void MadgwickAHRSupdate(Madgwick* state, float gx, float gy, float gz,
-                        float ax, float ay, float az,
-                        float mx, float my, float mz);
+void MadgwickAHRSupdate(Madgwick* state, float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
 
 #endif

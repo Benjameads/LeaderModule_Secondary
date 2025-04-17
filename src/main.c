@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_log.h"
 #include "esp_task_wdt.h"
-#include "read_task.h"
-#include "orientation_task.h"
 #include "imu_setup.h"
 #include "imu_spi.h"
 #include "data_timer.h"
@@ -14,6 +14,9 @@
 #include "MadgwickAHRS.h"
 #include "imu_orientation.h"
 #include "quaternion_utils.h"
+#include "read_task.h"
+#include "orientation_task.h"
+
 
 //Timer handles
 esp_timer_handle_t data_timer;
