@@ -7,11 +7,6 @@
 #include "data_timer.h"
 #include "imu_spi.h"
 
-//Timer handles
-esp_timer_handle_t data_timer;
-
-TaskHandle_t imu_read_task_handle;
-
 void data_timer_callback(void* arg) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(imu_read_task_handle, &xHigherPriorityTaskWoken);

@@ -1,7 +1,5 @@
 {
     "files.associations": {
-        "spi_types.h": "c",
-        "spi_master.h": "c",
-        "esp_timer.h": "c"
+        "imu_read.h": "c"
     }
 }

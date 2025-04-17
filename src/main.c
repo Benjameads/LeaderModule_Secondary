@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_log.h"
@@ -9,16 +11,36 @@
 #include "imu_spi.h"
 #include "data_timer.h"
 #include "imu_read.h"
-#include "uart.h"
+#include "MadgwickAHRS.h"
+#include "imu_orientation.h"
+#include "quaternion_utils.h"
+#include "read_task.h"
+#include "orientation_task.h"
 
-#define USER_BUTTON_GPIO 0  // GPIO pin connected to the user button
 
-//Function Prototypes
-void read_imu_data_task(void* arg);
+//Timer handles
+esp_timer_handle_t data_timer;
+TaskHandle_t imu_read_task_handle; // Task handle for IMU reading task
+
+// Array to hold the CS pin numbers
+const gpio_num_t cs_pins[] = {IMU_CS_BOH, IMU_CS_THUMB, IMU_CS_INDEX, IMU_CS_MIDDLE, IMU_CS_RING, IMU_CS_PINKY};
+
+//SPI device handles for each IMU setup in main
+spi_device_handle_t imu_handles[6];
+
+// Semaphore for printing orientation data
+SemaphoreHandle_t print_mutex;
+
+// IMU Data Queue
+QueueHandle_t imuQueue; // holds an index of IMU data to be processed
 
 void app_main() {
     
     vTaskDelay(pdMS_TO_TICKS(10000)); //10 seconds delay before starting the timer
+
+    print_mutex = xSemaphoreCreateMutex();
+    imu_data_queue_init(); // Initialize the IMU data queue
+    ESP_LOGI(TAG, "IMU data queue initialized");
 
     //init_uart_for_input(); // Initialize UART for input
     //ESP_LOGI(TAG, "UART initialized for input");
@@ -31,14 +53,21 @@ void app_main() {
         setup_imu(imu_handles, i); // Set up each IMU
     }
 
-    // Set up Data Structures for IMU data
-    for (int i = 0; i < 6; i++) {
-        imu_data[i].data_index = 0; // Initialize data index for each IMU
-        imu_data[i].spi = imu_handles[i]; // Assign SPI handle to each IMU data structure
-        imu_data[i].label = imu_labels[i]; // Assign label to each IMU data structure
-    }
+    setup_btn(); // Set up the button for user input
+
+    gpio_config_t debugpin_conf = {
+        .pin_bit_mask = 1ULL << DEBUGPIN,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&debugpin_conf); // Configure GPIO pin for output
 
     xTaskCreatePinnedToCore(read_imu_data_task, "imu_read", 6144, NULL, 5, &imu_read_task_handle, 1); // Create task to read IMU data (will be notified/started by timer)
+    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker0", 8192, NULL, 4, NULL, 0);
+    //xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker1", 8192, NULL, 4, NULL, 1);
+
 
     // Set up periodic data timer
     setup_data_timer();
@@ -49,68 +78,3 @@ void app_main() {
     // Note: The FIFO reading is now handled by the timer callback
 }
 
-void read_imu_data_task(void* arg) {
-    esp_task_wdt_add(NULL);  // Register this task with the Task Watchdog Timer
-    bool running = false; // Flag to indicate if the task is running
-    uint16_t sample = 0; // Sample index for circular buffer
-    uint8_t cmd = 0; // Buffer for UART input
-
-    // Configure the user button pin
-    gpio_config_t io_conf = {
-        .pin_bit_mask = 1ULL << USER_BUTTON_GPIO,
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE
-    };
-    gpio_config(&io_conf); // Configure the GPIO pin
-
-    while (1) {
-        if(running){
-            ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
-
-            if(sample == 0) {
-                printf("START SAMPLE\n"); // Print "START SAMPLE" to indicate the start of data output Matlab will read this and start recording data
-            }
-            for (uint8_t i = 0; i < 6; i++) {
-                //ESP_LOGI(TAG, "Reading IMU %d", i);
-                read_imu_data(imu_data, i); // Read and store data from each IMU
-                //read_fifo_data(imu_data, i); // Read and store FIFO data from each IMU
-            }
-
-            if(sample >= SAMPLE_SIZE){
-                sample = 0; // Reset sample index if it exceeds the buffer size
-                running = false; // Stop the task after reading all IMUs for Sample Duration
-
-                printf("START PRINT\n"); // Print "START PRINT" to indicate the start of data output Matlab will read this and start recording data
-                for(uint8_t i = 0; i < 6; i++){
-                    //print_imu_data(imu_data, i); // Print the data for each IMU
-                    print_imu_data_csv(imu_data, i); // Print the data in CSV format for each IMU
-                }
-                printf("END\n"); // Print "END" to indicate the end of data output Matlab will read this and stop recording data
-            }
-            else{
-                sample++; // Increment sample index (circular buffer)
-            }
-        }
-        else{
-            // // Check for UART input
-            // uart_read_bytes(UART_PORT, &cmd, 1, portMAX_DELAY); // Read 1 byte from UART
-            // ESP_LOGI(TAG, "Received UART char: %c (0x%02X)", cmd, cmd); // Log the received command
-            // if (cmd == 's') { // Start command
-            //     running = true; // Set running flag to true
-            //     ESP_LOGI(TAG, "IMU data reading started");
-            //     ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // Wait for notification to start reading
-            // }
-
-            // Check if the button is pressed (active low)
-            if (gpio_get_level(USER_BUTTON_GPIO) == 0) {
-                running = true;
-                ESP_LOGI(TAG, "User button pressed: starting IMU data reading");
-                ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-            }
-            esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
-            vTaskDelay(pdMS_TO_TICKS(100)); // Debounce delay
-        }
-    }
-}
