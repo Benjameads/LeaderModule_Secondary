@@ -1,4 +1,4 @@
-#include "espnow_comm_secondary.h"
+#include "espnow_comm.h"
 #include "esp_now.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
