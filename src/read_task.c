@@ -10,7 +10,39 @@
 #include "orientation_task.h"
 #include "MadgwickAHRS.h"
 
-void read_imu_data_task(void* arg) {
+// This task reads data from the IMUs and sends it to the queue for processing
+// This task is blocked until it receives a notification from a 100Hz timer
+// The data captured is passed one IMU at a time to the queue, and the processing task is blocked until data is received
+// The old task was used to read data for a set duration (5 seconds) and print the data to the console in CSV format
+// The new task is used to contsatnly read data from the IMUs and send it to the queue for processing
+void read_imu_data_task(void* arg){
+    struct IMUDatalist imu_data[NUMBER_OF_IMUS]; // Array to hold IMU data for each IMU
+        //Currently this IMU Data list holds lists for all 6 IMUS, and only one set/sample of data is stored in each list
+        //We used to store more data but after orientation analysis we only need the latest data for each IMU
+
+    struct IMUDatalist* imu_packet = NULL; // Pointer to IMU data packet
+
+    // Set up Data Structures for IMU data
+    for (int i = 0; i < 6; i++) {
+        imu_data[i].data_index = 0; // Initialize data index for each IMU
+        imu_data[i].spi = imu_handles[i]; // Assign SPI handle to each IMU data structure
+        imu_data[i].imu_index = i; // Assign IMU index to each IMU data structure
+    }
+
+    while (1) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
+
+        for (uint8_t i = 0; i < 6; i++) {
+            //ESP_LOGI(TAG, "Reading IMU %d", i);
+            read_imu_data(imu_data, i); // Read and store data from each IMU
+            imu_packet = &imu_data[i]; // Get the IMU data packet for the current IMU
+            xQueueSendToBack(imuQueue, &imu_packet, portMAX_DELAY); // Send the data to the queue for processing
+        }
+    }
+
+}
+
+void read_imu_data_task_old(void* arg) {
     struct IMUDatalist imu_data[NUMBER_OF_IMUS]; // Array to hold IMU data for each IMU
         //Currently this IMU Data list holds lists for all 6 IMUS, and only one set of data is stored in each list
         //We used to store more data but after orientation analysis we only need the latest data for each IMU
