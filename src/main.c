@@ -17,6 +17,10 @@
 #include "read_task.h"
 #include "orientation_task.h"
 
+#include "espnow_comm.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "nvs_flash.h"
 
 //Timer handles
 esp_timer_handle_t data_timer;
@@ -36,7 +40,7 @@ QueueHandle_t imuQueue; // holds an index of IMU data to be processed
 
 void app_main() {
     
-    vTaskDelay(pdMS_TO_TICKS(10000)); //10 seconds delay before starting the timer
+    init_espnow(); // Initialize ESP-NOW for communication
 
     print_mutex = xSemaphoreCreateMutex();
     imu_data_queue_init(); // Initialize the IMU data queue

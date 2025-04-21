@@ -63,6 +63,7 @@ void read_imu_data_task(void* arg) {
             if (gpio_get_level(USER_BUTTON_GPIO) == 0) {
                 running = true;
                 ESP_LOGI(TAG, "User button pressed: starting IMU data reading");
+                //Possibly send command to audio module to start recording
                 ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             }
             //esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
