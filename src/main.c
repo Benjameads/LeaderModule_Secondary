@@ -35,6 +35,7 @@ SemaphoreHandle_t print_mutex;
 // Data Queues
 QueueHandle_t imuQueue; // holds an index of IMU data to be processed
 QueueHandle_t gestureQueue; // holds pointers to GestureOrientationData structs
+QueueHandle_t orientationQueue; // holds pointers to OrientationDatalist structs
 
 /*
 Main function to initialize the application
@@ -81,10 +82,10 @@ void app_main() {
     gpio_config(&debugpin_conf); // Configure GPIO pin for output
 
     xTaskCreatePinnedToCore(read_imu_data_task, "imu_read", 6144, NULL, 5, &imu_read_task_handle, 1); // Create task to read IMU data (will be notified/started by timer)
-    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker0", 8192, NULL, 4, NULL, 0);
-    //xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker1", 8192, NULL, 4, NULL, 1);
-    //xTaskCreatePinnedToCore(gesture_worker_task, "GestureTask", 8192, NULL, 4, NULL, 0);
-    xTaskCreatePinnedToCore(gesture_worker_task, "GestureTask", 8192, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker0", 6144, NULL, 4, NULL, 0);
+    //xTaskCreatePinnedToCore(imu_orientation_worker_task, "Worker1", 6144, NULL, 4, NULL, 1);
+    //xTaskCreatePinnedToCore(gesture_worker_task, "GestureTask", 6144, NULL, 4, NULL, 0);
+    xTaskCreatePinnedToCore(gesture_worker_task, "GestureTask", 6144, NULL, 4, NULL, 1);
 
 
     // Set up periodic data timer

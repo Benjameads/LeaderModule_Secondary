@@ -35,10 +35,11 @@ void gesture_queue_init(void) {
     The GestureOrientationData is updated with current and previous orientation data for gesture processing
 **************************************************************************************************/
 void imu_orientation_worker_task(void* arg) {
+    const float timeinterval = 1.0f / SAMPLE_RATE; // Time interval in seconds
+    float t = 0.0f; // Initialize time variable
     //OrientationDatalist orientation_data[NUMBER_OF_IMUS];
-    //esp_task_wdt_add(NULL);  // Register this task with the Task Watchdog Timer
-    static GestureOrientationData gesture_data[NUMBER_OF_IMUS]; // Array to hold gesture data for each IMU
-    GestureOrientationData* gesture_data_ptr = NULL; // Pointer to gesture data
+    //static GestureOrientationData gesture_data[NUMBER_OF_IMUS]; // Array to hold gesture data for each IMU
+    //GestureOrientationData* gesture_data_ptr = NULL; // Pointer to gesture data
     OrientationDatalist* orientation_data_ptr = NULL; // Pointer to orientation data
 
     for(int i = 0; i < NUMBER_OF_IMUS; i++){
@@ -56,24 +57,24 @@ void imu_orientation_worker_task(void* arg) {
             //gpio_set_level(DEBUGPIN, 1); // Set the debug pin high to indicate sample processing start
 
             float yaw, pitch, roll;
-            update_imu_orientation_from_raw(&orientation_data[imu_index].filter , &imu_packet->data[imu_index], 1.0f / SAMPLE_RATE, &yaw, &pitch, &roll);
+            update_imu_orientation_from_raw(&orientation_data[imu_index].filter , &imu_packet->data[0], 1.0f / SAMPLE_RATE, &yaw, &pitch, &roll);
 
-            //Update Gesture data for the gesture task
-            gesture_data[imu_index].previous.yaw = gesture_data[imu_index].current.yaw;
-            gesture_data[imu_index].previous.pitch = gesture_data[imu_index].current.pitch;
-            gesture_data[imu_index].previous.roll = gesture_data[imu_index].current.roll;
-            gesture_data[imu_index].current.yaw = yaw;
-            gesture_data[imu_index].current.pitch = pitch;
-            gesture_data[imu_index].current.roll = roll;
+            // //Update Gesture data for the gesture task
+            // gesture_data[imu_index].previous.yaw = gesture_data[imu_index].current.yaw;
+            // gesture_data[imu_index].previous.pitch = gesture_data[imu_index].current.pitch;
+            // gesture_data[imu_index].previous.roll = gesture_data[imu_index].current.roll;
+            // gesture_data[imu_index].current.yaw = yaw;
+            // gesture_data[imu_index].current.pitch = pitch;
+            // gesture_data[imu_index].current.roll = roll;
 
             // Wait for all IMUs to finish processing before sending gesture data to the queue
-            if(imu_index == NUMBER_OF_IMUS-1){
-                // Send gesture data to the queue for gesture processing
-                gesture_data_ptr = gesture_data;
-                if (xQueueSend(gestureQueue, &gesture_data_ptr, portMAX_DELAY) != pdTRUE) {
-                    ESP_LOGE(TAG, "Failed to send gesture data to queue");
-                }
-            }
+            // if(imu_index == NUMBER_OF_IMUS-1){
+            //     // Send gesture data to the queue for gesture processing
+            //     gesture_data_ptr = gesture_data;
+            //     if (xQueueSend(gestureQueue, &gesture_data_ptr, portMAX_DELAY) != pdTRUE) {
+            //         ESP_LOGE(TAG, "Failed to send gesture data to queue");
+            //     }
+            // }
 
             // Store output in orientation_data
             orientation_data[imu_index].data[data_index].yaw = yaw;
@@ -92,6 +93,17 @@ void imu_orientation_worker_task(void* arg) {
             }
 
             if(data_index >= SAMPLE_SIZE_ORIENTATION-1){
+                // if(imu_index == 5) {
+                //     printf("%.2f,%d,%.3f,%.3f,%.3f\n",
+                //         t,
+                //         imu_index,
+                //         orientation_data[imu_index].data[data_index].yaw,
+                //         orientation_data[imu_index].data[data_index].pitch,
+                //         orientation_data[imu_index].data[data_index].roll);
+     
+                //     t += timeinterval; // Increment time by the time interval
+                // }
+
                 //************************** OLD Code to print orientation data to CSV format ****************************//
                 // if (imu_index == 0) {
                 //     printf("START PRINT\n"); // Print "START PRINT" to indicate the start of data output Matlab will read this and start recording data
@@ -113,8 +125,6 @@ void imu_orientation_worker_task(void* arg) {
 
             //gpio_set_level(DEBUGPIN, 0); // Set the debug pin low to indicate sample processing end
         }
-        //esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
-        //vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
 

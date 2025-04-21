@@ -23,6 +23,11 @@ typedef enum {
 #define STALL_LIMIT 5               // for debounce when movement reverses
 #define FIND_MIN 0
 #define FIND_MAX 1
+#define FLAT_PITCH_TOLERANCE 20.0f
+#define FLAT_ROLL_TOLERANCE 20.0f
+#define ROLL_FLIP_THRESHOLD 160.0f
+#define TILT_THRESHOLD 45.0f
+
 
 #define BOH_IS_FLAT \
     (fabsf(gesture_data[BOH].current.pitch) < FLAT_THRESHOLD && \
@@ -83,7 +88,12 @@ float wrap_angle_deg(float angle);
 float shortest_angle_diff(float a, float b);
 
 void gesture_worker_task(void* arg);
-void imu_orientaion_detection(IMUState* imu_state, GestureOrientationData* gesture_data);
+void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data);
+void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
+float peak_angle(int imu_index, Axis axis, const OrientationDatalist* orientation_data, int max_boolean);
+float wrap_angle_deg(float angle);
+float shortest_angle_diff(float a, float b);
+const char* imu_orientation_str(IMUOrientation o);
 
 
 GestureState disperse(GestureOrientationData* gesture_data);

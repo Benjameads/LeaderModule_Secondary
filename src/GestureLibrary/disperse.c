@@ -14,14 +14,14 @@ GestureState disperse(GestureOrientationData* gesture_data){
     static GestureState state = GESTURE_START, restorestate; // Initialize the state variable to GESTURE_NO_PROGRESS
     struct OrientationData start_data[NUMBER_OF_IMUS] = {0};
     float yawdif[NUMBER_OF_IMUS] = {0};
-    float pitchdif[NUMBER_OF_IMUS] = {0};
-    float rolldif[NUMBER_OF_IMUS] = {0};
+    //float pitchdif[NUMBER_OF_IMUS] = {0};
+    //float rolldif[NUMBER_OF_IMUS] = {0};
     static uint8_t stallcount = 0; // Initialize stall count to 0
 
     for(int i = 0; i < NUMBER_OF_IMUS; i++){
         yawdif[i] = YAWDIF(i);      // Use macro to get yaw difference
-        pitchdif[i] = PITCHDIF(i);  // Use macro to get pitch difference
-        rolldif[i] = ROLLDIF(i);    // Use macro to get roll difference
+        //pitchdif[i] = PITCHDIF(i);  // Use macro to get pitch difference
+        //rolldif[i] = ROLLDIF(i);    // Use macro to get roll difference
     }
 
     switch(state) {

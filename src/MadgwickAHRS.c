@@ -13,6 +13,33 @@ void MadgwickInit(Madgwick* state) {
     state->q[3] = 0.0f;
 }
 
+/******************************************************************************
+ * MadgwickAHRSupdate
+ * -------------------
+ * This function updates the internal quaternion representing orientation 
+ * using 9-axis IMU data (gyroscope, accelerometer, and magnetometer).
+ *
+ * INPUT PARAMETERS:
+ *   gx, gy, gz - Gyroscope angular velocity in radians per second (rad/s)
+ *   ax, ay, az - Accelerometer measurements in units of gravity (g)
+ *   mx, my, mz - Magnetometer measurements in microtesla (uT) or any 
+ *                consistent unit; values are normalized internally
+ *
+ * EXPECTED UNITS:
+ *   - Gyroscope: radians/second (rad/s)
+ *       > If your IMU gives degrees/second, convert using: radians = degrees * (π / 180)
+ *   - Accelerometer: raw values should be scaled to g units
+ *       > If using ±2g range and 16-bit output, scale: accel_g = raw / 16384.0
+ *   - Magnetometer: typically in microtesla (µT), but relative values also work
+ *
+ * NOTES:
+ *   - The function uses these inputs to perform sensor fusion and update a 
+ *     unit quaternion representing the 3D orientation of the device.
+ *   - This is part of a complementary filter: accelerometer/magnetometer 
+ *     correct drift, while gyro integrates angular velocity.
+ *
+ * See: https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
+ ******************************************************************************/
 void MadgwickAHRSupdate(Madgwick* state, float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
     float q1 = state->q[0], q2 = state->q[1], q3 = state->q[2], q4 = state->q[3];
     float recipNorm, s1, s2, s3, s4;

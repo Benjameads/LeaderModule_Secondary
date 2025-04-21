@@ -21,7 +21,8 @@ void read_imu_data_task(void* arg){
         //We used to store more data but after orientation analysis we only need the latest data for each IMU
 
     struct IMUDatalist* imu_packet = NULL; // Pointer to IMU data packet
-
+    int print_index = 0; // Index for printing data
+    
     // Set up Data Structures for IMU data
     for (int i = 0; i < 6; i++) {
         imu_data[i].data_index = 0; // Initialize data index for each IMU
@@ -33,11 +34,18 @@ void read_imu_data_task(void* arg){
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for notification
 
         for (uint8_t i = 0; i < 6; i++) {
-            //ESP_LOGI(TAG, "Reading IMU %d", i);
             read_imu_data(imu_data, i); // Read and store data from each IMU
             imu_packet = &imu_data[i]; // Get the IMU data packet for the current IMU
             xQueueSendToBack(imuQueue, &imu_packet, portMAX_DELAY); // Send the data to the queue for processing
         }
+
+        // if(print_index >= 9){
+        //     print_imu_data(imu_data, 5);
+        //     print_index = 0; // Reset print index if it exceeds the buffer size
+        // }
+        // else{
+        //     print_index++; // Increment print index (circular buffer)
+        // }
     }
 
 }

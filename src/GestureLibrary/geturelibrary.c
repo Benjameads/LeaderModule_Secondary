@@ -8,6 +8,7 @@
 #include "orientation_task.h"
 #include "imu_read.h"
 #include "imu_spi.h"
+#include "driver/gpio.h"
 
 void gesture_worker_task(void* arg) {
     // GestureOrientationData* gesture_data = NULL;
@@ -21,7 +22,7 @@ void gesture_worker_task(void* arg) {
         }
 
         // Call the function to detect the orientation of each IMU
-        imu_orientaion_detection(imu_state, orientation_data);
+        imu_orientation_detection(imu_state, orientation_data);
 
         // if(xQueueReceive(gestureQueue, &gesture_data, portMAX_DELAY) != pdTRUE) {
         //     ESP_LOGE(TAG, "Failed to receive gesture data from queue");
@@ -32,9 +33,49 @@ void gesture_worker_task(void* arg) {
     }
 }
 
-void imu_orientaion_detection(IMUState* imu_state, OrientationDatalist* orientation_data) {
+void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data) {
+    static IMUOrientation last_orientation[NUMBER_OF_IMUS] = {IMU_FLAT_UP, IMU_FORWARD, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT}; // Store the last orientation for each IMU
     int data_index = orientation_data[0].data_index; // Get the current data index
     // Detect the orientation of each IMU based on the current orientation data
+
+    // --- Back of Hand (IMU 0) Orientation ---
+    float boh_pitch = orientation_data[BOH].data[data_index].pitch;
+    float boh_roll  = orientation_data[BOH].data[data_index].roll;
+
+    gpio_set_level(DEBUGPIN, 1); // Set the debug pin high to indicate sample processing start
+
+    if (fabsf(boh_pitch) < FLAT_PITCH_TOLERANCE && fabsf(boh_roll) < FLAT_ROLL_TOLERANCE) {
+        imu_state[BOH].orientation = IMU_FLAT_UP;
+    } else if (fabsf(boh_pitch) < FLAT_PITCH_TOLERANCE && fabsf(boh_roll) > ROLL_FLIP_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_FLAT_DOWN;
+    } else if (boh_pitch > TILT_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_FORWARD;
+    } else if (boh_pitch < -TILT_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_BACKWARD;
+    } else if (boh_roll > TILT_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_RIGHT;
+    } else if (boh_roll < -TILT_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_LEFT;
+    } else {
+        imu_state[BOH].orientation = IMU_FLAT_UP;  // Default fallback
+    }
+
+    // --- Thumb (IMU 1) Orientation ---
+    float thumb_pitch = orientation_data[1].data[data_index].pitch;
+    float thumb_roll  = orientation_data[1].data[data_index].roll;
+
+    if (thumb_pitch > TILT_THRESHOLD) {
+        imu_state[1].orientation = IMU_FORWARD;
+    } else if (thumb_pitch < -TILT_THRESHOLD) {
+        imu_state[1].orientation = IMU_BACKWARD;
+    } else if (thumb_roll > TILT_THRESHOLD) {
+        imu_state[1].orientation = IMU_RIGHT;
+    } else if (thumb_roll < -TILT_THRESHOLD) {
+        imu_state[1].orientation = IMU_LEFT;
+    } else {
+        imu_state[1].orientation = IMU_FLAT_UP;  // Default fallback
+}
+
 
     //Fingers are IMUs 2-6, 0 is BOH, and 1 is Thumb
     for (int i = 2; i < NUMBER_OF_IMUS; i++) {
@@ -53,6 +94,33 @@ void imu_orientaion_detection(IMUState* imu_state, OrientationDatalist* orientat
         axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
         axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
     }
+
+    if(imu_state[0].orientation != last_orientation[0]) {
+        printf("BOH:   %s, Pitch: %.3f \n", imu_orientation_str(imu_state[0].orientation), orientation_data[0].data[data_index].pitch);
+        last_orientation[0] = imu_state[0].orientation;
+    }
+    if(imu_state[1].orientation != last_orientation[1]) {
+        printf("Thumb: %s\n", imu_orientation_str(imu_state[1].orientation));
+        last_orientation[1] = imu_state[1].orientation;
+    }
+    if(imu_state[2].orientation != last_orientation[2]) {
+        printf("Index: %s\n", imu_orientation_str(imu_state[2].orientation));
+        last_orientation[2] = imu_state[2].orientation;
+    }
+    if(imu_state[3].orientation != last_orientation[3]) {
+        printf("Middle: %s\n", imu_orientation_str(imu_state[3].orientation));
+        last_orientation[3] = imu_state[3].orientation;
+    }
+    if(imu_state[4].orientation != last_orientation[4]) {
+        printf("Ring:  %s\n", imu_orientation_str(imu_state[4].orientation));
+        last_orientation[4] = imu_state[4].orientation;
+    }
+    if(imu_state[5].orientation != last_orientation[5]) {
+        printf("Pinky: %s\n", imu_orientation_str(imu_state[5].orientation));
+        last_orientation[5] = imu_state[5].orientation;
+    }
+
+    gpio_set_level(DEBUGPIN, 0); // Set the debug pin low to indicate sample processing end
 }
 
 // This function is used to detect changes in orientation for a specific axis and IMU
@@ -68,7 +136,7 @@ void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, Orie
     int past = (cur + 1) % SAMPLE_SIZE_ORIENTATION; // 10 samples ago
 
     //angle past is 10 samples ago
-    float angle_cur, angle_prev, angle_past;
+    float angle_cur, angle_past;
 
     // Select the appropriate axis from OrientationData
     switch (axis) {
@@ -195,3 +263,18 @@ float shortest_angle_diff(float a, float b) {
     float diff = wrap_angle_deg(a - b);
     return diff;
 }
+
+const char* imu_orientation_str(IMUOrientation o) {
+    switch (o) {
+        case IMU_FLAT_UP:    return "Flat Up";
+        case IMU_FLAT_DOWN:  return "Flat Down";
+        case IMU_LEFT:       return "Left Tilt";
+        case IMU_RIGHT:      return "Right Tilt";
+        case IMU_FORWARD:    return "Forward Tilt";
+        case IMU_BACKWARD:   return "Backward Tilt";
+        case FINGER_STRAIGHT:return "Straight";
+        case FINGER_CURLED:  return "Curled";
+        default:             return "Unknown";
+    }
+}
+
