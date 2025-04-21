@@ -1,16 +1,28 @@
-#ifndef ESPNOW_COMM_SECONDARY_H
-#define ESPNOW_COMM_SECONDARY_H
+// #ifndef ESPNOW_COMM_SECONDARY_H
+// #define ESPNOW_COMM_SECONDARY_H
 
-#include <stdint.h>
-#include "esp_err.h"
+// #include <stdint.h>
+// #include "esp_err.h"
 
-// Replace with the MAC address of the Primary Glove
-#define ESPNOW_PEER_MAC_ADDR {0x98, 0x3D, 0xAE, 0xE7, 0xA7, 0x98}
+// // Replace with the MAC address of the Primary Glove
+// #define ESPNOW_PEER_MAC_ADDR {0x74, 0x4D, 0xBD, 0x81, 0x6D, 0x18}
 
-// Initializes ESP-NOW for sending only (no receive callback)
-esp_err_t espnow_init_sender_only(void);
+// // Initializes ESP-NOW for sending only (no receive callback)
+// esp_err_t espnow_init_sender_only(void);
 
-// Send a single byte of data
-esp_err_t espnow_send_byte(uint8_t data);
+// // Send a single byte of data
+// esp_err_t espnow_send_byte(uint8_t data);
 
-#endif // ESPNOW_COMM_SECONDARY_H
+// #endif // ESPNOW_COMM_SECONDARY_H
+
+#ifndef ESPNOW_COMM_H
+#define ESPNOW_COMM_H
+
+#include "esp_now.h"
+#include "esp_wifi.h"
+#include "esp_log.h"
+
+void init_espnow();
+void send_gesture_byte(uint8_t gesture);
+
+#endif // ESPNOW_COMM_H

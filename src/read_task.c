@@ -64,6 +64,9 @@ void read_imu_data_task(void* arg) {
                 running = true;
                 ESP_LOGI(TAG, "User button pressed: starting IMU data reading");
                 ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                //This will need to be removed eventually, but is helpful for testing communication.
+                send_gesture_byte('F'); //REMOVE THIS LINE FOR FINAL VERSION
+                printf("Gesture byte sent: %c\n", 'F'); // REMOVE THIS LINE FOR FINAL VERSION
             }
             //esp_task_wdt_reset(); // Feed the watchdog to prevent timeout
             vTaskDelay(pdMS_TO_TICKS(10)); // Debounce delay

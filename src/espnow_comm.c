@@ -1,25 +1,28 @@
 #include "espnow_comm.h"
 #include "esp_now.h"
 #include "esp_wifi.h"
-#include "esp_log.h"
-#include <string.h>
 #include "nvs_flash.h"
-#include "esp_netif.h"
+#include <string.h>
+#include <stdio.h>
 
-static const char *TAG = "ESP_NOW_SENDER";
-static uint8_t peer_mac[] = ESPNOW_PEER_MAC_ADDR;
+static const char *TAG = "ESP-NOW";
+static uint8_t receiver_mac[] = {0x74, 0x4D, 0xBD, 0x81, 0x6D, 0x18};  // MAC Address of Primary Leader Module (right glove)
+//static uint8_t receiver_mac[] = {0x98, 0x3D, 0xAE, 0xE7, 0xA7, 0x98};  // MAC Address of uController 1
 
-static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-    ESP_LOGI(TAG, "Send Status: %s", status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
-}
+static esp_now_peer_info_t peerInfo;
 
-esp_err_t espnow_init_sender_only(void) {
+// static void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+//     ESP_LOGI(TAG, "Last Packet Send Status: %s", status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+// }
+
+void init_espnow() {
+    //nvs_flash_init(); //required for wifi to work
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
+        nvs_flash_erase();
+        ret = nvs_flash_init();
     }
-
+    // Initialize WiFi in STA mode
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -28,23 +31,34 @@ esp_err_t espnow_init_sender_only(void) {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_ERROR_CHECK(esp_now_init());
-    ESP_ERROR_CHECK(esp_now_register_send_cb(on_data_sent));
-
-    esp_now_peer_info_t peerInfo = {
-        .channel = 0,
-        .encrypt = false
-    };
-    memcpy(peerInfo.peer_addr, peer_mac, 6);
-
-    if (!esp_now_is_peer_exist(peer_mac)) {
-        ESP_ERROR_CHECK(esp_now_add_peer(&peerInfo));
+    // Init ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+        ESP_LOGE(TAG, "Error initializing ESP-NOW");
+        return;
     }
 
-    ESP_LOGI(TAG, "ESP-NOW Sender Initialized");
-    return ESP_OK;
+    //esp_now_register_send_cb(OnDataSent);
+
+    // Register peer
+    memcpy(peerInfo.peer_addr, receiver_mac, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add peer");
+        return;
+    }
 }
 
-esp_err_t espnow_send_byte(uint8_t data) {
-    return esp_now_send(peer_mac, &data, sizeof(data));
+//This is the function that sends the gesture byte to the primary glove
+//You call it whenever you recognize a gesture.
+void send_gesture_byte(uint8_t gesture) {
+    esp_err_t result = esp_now_send(receiver_mac, &gesture, sizeof(gesture));
+
+    if (result == ESP_OK) {
+        ESP_LOGI(TAG, "Sent: 0x%02X", gesture);
+    } else {
+        ESP_LOGE(TAG, "Send error: %d", result);
+    }
 }
+
