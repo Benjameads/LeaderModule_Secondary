@@ -3,12 +3,11 @@
 
 #include "orientation_task.h"
 #include "relative_orientation.h"
+#include "espnow_comm.h"
+#include "imu_read.h"
 
 typedef enum {
-    GESTURE_START,
-    GESTURE_STEP_1,
-    GESTURE_STEP_2,
-    GESTURE_STALL,
+    GESTURE_INCOMPLETE,
     GESTURE_COMPLETE
 } GestureState;
 
@@ -105,7 +104,8 @@ float wrap_angle_deg(float angle);
 float shortest_angle_diff(float a, float b);
 const char* imu_orientation_str(IMUOrientation o);
 
-
-GestureState disperse(GestureOrientationData* gesture_data);
+GestureState the_bird(IMUState* imu_state);
+//GestureState disperse(GestureOrientationData* gesture_data);
+//GestureState freeze(GestureOrientationData* gesture_data);
 
 #endif

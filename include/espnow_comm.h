@@ -11,6 +11,6 @@ extern QueueHandle_t rx_gesture_queue; // Queue to hold gesture data
 void rx_gesture_queue_init(void);
 
 void init_espnow();
-void send_to_audio_module(uint8_t gesture);
+void send_gesture_byte(uint8_t gesture);
 
 #endif // ESPNOW_COMM_H

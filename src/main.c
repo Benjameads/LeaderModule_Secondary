@@ -54,6 +54,9 @@ The gesture task passes the orientation data to the gesture functions to process
 The gesture functions will then send completed gestures to Secondary module for command playback
 */
 void app_main() {
+
+    vTaskDelay(pdMS_TO_TICKS(10000)); // Delay to allow for system initialization
+    
     init_espnow(); // Initialize ESP-NOW for communication
 
     print_mutex = xSemaphoreCreateMutex();

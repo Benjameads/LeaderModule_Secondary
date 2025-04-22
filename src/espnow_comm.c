@@ -5,8 +5,6 @@
 #include <esp_now.h>
 #include "nvs_flash.h"
 
-static const char *TAG = "ESP-NOW";
-
 #define GESTURE_QUEUE_SIZE 10 // Size of the gesture queue
 
 static uint8_t audio_mac[] = {0x98, 0x3D, 0xAE, 0xE7, 0x9B, 0x60}; // MAC address of uController 2 (ie. Audio Module)
@@ -17,13 +15,11 @@ void rx_gesture_queue_init(void)
     rx_gesture_queue = xQueueCreate(GESTURE_QUEUE_SIZE, sizeof(uint8_t*)); // Create a queue to hold gesture data
     if (rx_gesture_queue == NULL) 
     {
-        println("Failed to create gesture queue");
+        printf("Failed to create gesture queue\n");
     } else {
-        println("Gesture queue created successfully");
+        printf("Gesture queue created successfully\n");
     }
 }  
-
-void send_gesture_byte(uint8_t gesture); // Forward declaration
 
 void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) 
 {
