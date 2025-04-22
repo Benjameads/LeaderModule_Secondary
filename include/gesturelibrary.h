@@ -2,6 +2,7 @@
 #define GESTURELIBRARY_H
 
 #include "orientation_task.h"
+#include "relative_orientation.h"
 
 typedef enum {
     GESTURE_START,
@@ -18,7 +19,7 @@ typedef enum {
 
 #define FLAT_THRESHOLD 30.0f
 #define ANGLE_VELOCITY_DT 0.1f      // 0.1 second window = 10 samples @ 100 Hz
-#define CURLED_THRESHOLD 35.0f
+#define CURLED_THRESHOLD 0.7f
 #define VELOCITY_THRESHOLD 20.0f    // deg/s threshold to detect motion
 #define STALL_LIMIT 5               // for debounce when movement reverses
 #define FIND_MIN 0
@@ -58,6 +59,8 @@ typedef struct {
     float peak_angle;
     float angle_velocity;  // instantaneous ω
     float angle_diff;      // peak - start
+    float start_vector[3];
+    float peak_vector[3];
 } AxisTracker;
 
 typedef enum {
@@ -77,9 +80,16 @@ typedef enum {
     ROLL
 } Axis;
 
+typedef enum {
+    AXIS_CURL = 0,
+    AXIS_SPREAD = 1,
+    AXIS_TWIST = 2
+} RelativeAxis;
+
 typedef struct {
     IMUOrientation orientation;
     AxisTracker axis[3]; // yaw, pitch, roll
+    RelativeRotation relative;
 } IMUState;
 
 // The data structure for the gesture library is defined in orientation_task.h
