@@ -40,6 +40,7 @@ SemaphoreHandle_t print_mutex;
 QueueHandle_t imuQueue; // holds an index of IMU data to be processed
 QueueHandle_t gestureQueue; // holds pointers to GestureOrientationData structs
 QueueHandle_t orientationQueue; // holds pointers to OrientationDatalist structs
+QueueHandle_t rx_gesture_queue; // Queue to hold recieved gesture data
 
 /*
 Main function to initialize the application
@@ -53,7 +54,6 @@ The gesture task passes the orientation data to the gesture functions to process
 The gesture functions will then send completed gestures to Secondary module for command playback
 */
 void app_main() {
-    
     init_espnow(); // Initialize ESP-NOW for communication
 
     print_mutex = xSemaphoreCreateMutex();
