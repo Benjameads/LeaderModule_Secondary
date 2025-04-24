@@ -5,6 +5,7 @@
 #include "relative_orientation.h"
 #include "espnow_comm.h"
 #include "imu_read.h"
+#include <math.h> // for fabsf
 
 typedef enum {
     GESTURE_INCOMPLETE,
@@ -12,9 +13,6 @@ typedef enum {
 } GestureState;
 
 #define STALLLIMIT 5 // The limit for the stall state to be considered a valid gesture
-
-#pragma once
-#include <math.h> // for fabsf
 
 #define FLAT_THRESHOLD 30.0f
 #define ANGLE_VELOCITY_DT 0.1f      // 0.1 second window = 10 samples @ 100 Hz
@@ -106,6 +104,15 @@ const char* imu_orientation_str(IMUOrientation o);
 
 GestureState the_bird(IMUState* imu_state);
 //GestureState disperse(GestureOrientationData* gesture_data);
-//GestureState freeze(GestureOrientationData* gesture_data);
-
+GestureState freeze(IMUState* imu_state);
+GestureState one(IMUState* imu_state);
+GestureState two(IMUState* imu_state);
+GestureState three(IMUState* imu_state);
+GestureState four(IMUState* imu_state);
+GestureState five(IMUState* imu_state);
+GestureState six(IMUState* imu_state);
+GestureState seven(IMUState* imu_state);
+GestureState eight(IMUState* imu_state);
+GestureState nine(IMUState* imu_state);
+GestureState enemy_in_sight(IMUState* imu_state);
 #endif
