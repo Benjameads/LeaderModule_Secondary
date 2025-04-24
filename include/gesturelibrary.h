@@ -17,20 +17,11 @@ typedef enum {
 #pragma once
 #include <math.h> // for fabsf
 
-#define FLAT_THRESHOLD 30.0f
-#define ANGLE_VELOCITY_DT 0.1f      // 0.1 second window = 10 samples @ 100 Hz
 #define CURLED_THRESHOLD 0.7f
 #define VELOCITY_THRESHOLD 1.0f    // rad/s threshold to detect motion
-#define STALL_LIMIT 5               // for debounce when movement reverses
-#define FIND_MIN 0
-#define FIND_MAX 1
-#define FLAT_PITCH_TOLERANCE 20.0f
-#define FLAT_ROLL_TOLERANCE 20.0f
-#define ROLL_FLIP_THRESHOLD 160.0f
 #define TILT_THRESHOLD 45.0f
-#define MIN_ANGLE_CHANGE   0.02f      // rad ≈ 1.1°
-#define MOTION_TOLERANCE 0.04f  // ~2.3 degrees (in radians)
-#define EMA_ALPHA          0.2f   // smoothing factor for exponential moving average
+#define EMA_ALPHA          0.1f   // smoothing factor for exponential moving average
+#define SAMPLE_PERIOD_SEC 0.01f // 10ms sample period
 
 #define RAD2DEG(x) ((x) * 57.2957795f)
 
@@ -54,6 +45,7 @@ typedef enum {
     AXIS_STILL,
     AXIS_INCREASING,
     AXIS_DECREASING,
+    AXIS_PEAKING,
     AXIS_PEAKED
 } AxisState;
 
@@ -105,8 +97,8 @@ float shortest_angle_diff(float a, float b);
 void gesture_worker_task(void* arg);
 void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data);
 //void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
-//void track_axis_motion_quat(int imu_index, RelativeAxis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
-void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, const float q_diff[4]);
+void track_axis_motion_quat(int imu_index, RelativeAxis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
+//void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, const float q_diff[4]);
 float peak_angle(int imu_index, Axis axis, const OrientationDatalist* orientation_data, int max_boolean);
 float wrap_angle_deg(float angle);
 float shortest_angle_diff(float a, float b);

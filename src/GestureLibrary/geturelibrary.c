@@ -132,29 +132,15 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
 
     
 
-    //Use a state machine to monitor each axis to detect changes in orientation
+    //Use a state machine to monitor each axis to detect changes in orientation    
     for (int i = 0; i < NUMBER_OF_IMUS; i++) {
-        float q_diff[4];
-        int cur = orientation_data[i].data_index;
-        int past = (cur + SAMPLE_SIZE_ORIENTATION - 1) % SAMPLE_SIZE_ORIENTATION;
-        quaternion_difference(orientation_data[i].data[past].quaternion,
-                              orientation_data[i].data[cur].quaternion,
-                              q_diff);
-    
-        // Pass q_diff into the axis tracking function
-        track_axis_motion_quat(i, AXIS_CURL, imu_state, q_diff);
-        track_axis_motion_quat(i, AXIS_SPREAD, imu_state, q_diff);
-        track_axis_motion_quat(i, AXIS_TWIST, imu_state, q_diff);
+        track_axis_motion_quat(i, AXIS_CURL, imu_state, orientation_data);
+        track_axis_motion_quat(i, AXIS_SPREAD, imu_state, orientation_data);
+        track_axis_motion_quat(i, AXIS_TWIST, imu_state, orientation_data);
+        // axis_orientation_change(i, YAW, &imu_state[i], orientation_data);
+        // axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
+        // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
     }
-    
-    // for (int i = 0; i < NUMBER_OF_IMUS; i++) {
-    //     track_axis_motion_quat(i, AXIS_CURL, imu_state, orientation_data);
-    //     track_axis_motion_quat(i, AXIS_SPREAD, imu_state, orientation_data);
-    //     track_axis_motion_quat(i, AXIS_TWIST, imu_state, orientation_data);
-    //     // axis_orientation_change(i, YAW, &imu_state[i], orientation_data);
-    //     // axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
-    //     // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
-    // }
 
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
         printf("Spread Movement Detected: %.3f\n", 
@@ -198,14 +184,29 @@ static const float axis_vectors[3][3] = {
     {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
 };
 
-void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, const float q_diff[4]) {
-    float axis[3], angle;
-    quaternion_to_axis_angle(q_diff, axis, &angle);
+void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, OrientationDatalist* orientation_data) {
+    float v1[3], v2[3];
+    float q_prev[4], q_curr[4];
+    int cur = orientation_data[imu_index].data_index;
+    int past = (cur + SAMPLE_SIZE_ORIENTATION - 1) % SAMPLE_SIZE_ORIENTATION;
 
-    const float* ref_axis = axis_vectors[which_axis];
-    float signed_angle = angle * safe_dot(axis, ref_axis);
-    float raw_velocity = signed_angle / 0.01f; // rad/s at 100 Hz
+    // Rotate the axis to world frame
+    quaternion_rotate_vector(q_prev, axis_vectors[which_axis], v1);
+    quaternion_rotate_vector(q_curr, axis_vectors[which_axis], v2);
 
+    // Calculate angle between them
+    float dot = safe_dot(v1, v2);
+    dot = fminf(fmaxf(dot, -1.0f), 1.0f); // Clamp to avoid NaN
+    float angle = acosf(dot); // Angle in radians
+
+    // Direction: use cross product to determine positive or negative rotation
+    float cross[3];
+    cross_product(v1, v2, cross);
+
+    // Project onto world axis that aligns with expected direction of motion
+    float direction = safe_dot(cross, axis_vectors[which_axis]); // +1 or -1 depending on sign
+    float raw_velocity = (angle / SAMPLE_PERIOD_SEC) * (direction >= 0 ? 1 : -1);
+    
     AxisTracker* tracker = &imu_state[imu_index].axis[which_axis];
 
     // Apply exponential moving average to velocity
