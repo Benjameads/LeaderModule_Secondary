@@ -6,6 +6,7 @@
 #include "espnow_comm.h"
 #include "imu_read.h"
 #include "quaternion_utils.h"
+#include <math.h> // for fabsf
 
 typedef enum {
     GESTURE_INCOMPLETE,
@@ -13,9 +14,6 @@ typedef enum {
 } GestureState;
 
 #define STALLLIMIT 5 // The limit for the stall state to be considered a valid gesture
-
-#pragma once
-#include <math.h> // for fabsf
 
 #define CURLED_THRESHOLD 0.7f
 #define VELOCITY_THRESHOLD 1.0f    // rad/s threshold to detect motion
@@ -107,6 +105,15 @@ const char* axis_state_str(AxisState s);
 
 GestureState the_bird(IMUState* imu_state);
 //GestureState disperse(GestureOrientationData* gesture_data);
-//GestureState freeze(GestureOrientationData* gesture_data);
-
+GestureState freeze(IMUState* imu_state);
+GestureState one(IMUState* imu_state);
+GestureState two(IMUState* imu_state);
+GestureState three(IMUState* imu_state);
+GestureState four(IMUState* imu_state);
+GestureState five(IMUState* imu_state);
+GestureState six(IMUState* imu_state);
+GestureState seven(IMUState* imu_state);
+GestureState eight(IMUState* imu_state);
+GestureState nine(IMUState* imu_state);
+GestureState enemy_in_sight(IMUState* imu_state);
 #endif
