@@ -57,7 +57,9 @@ void app_main() {
 
     vTaskDelay(pdMS_TO_TICKS(10000)); // Delay to allow for system initialization
     
-    init_espnow(); // Initialize ESP-NOW for communication
+    //init_espnow(); // Initialize ESP-NOW for communication
+
+    vTaskDelay(pdMS_TO_TICKS(10000)); // Delay to allow for initialization
 
     print_mutex = xSemaphoreCreateMutex();
     imu_data_queue_init(); // Initialize the IMU data queue
@@ -73,6 +75,7 @@ void app_main() {
     ESP_ERROR_CHECK(spi_init());
 
     ESP_LOGI(TAG, "Initializing IMUs");
+    setup_imu(imu_handles, 0);
     for (int i = 0; i < 6; i++) {
         setup_imu(imu_handles, i); // Set up each IMU
     }

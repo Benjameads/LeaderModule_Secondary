@@ -11,13 +11,13 @@ void update_imu_orientation_from_raw( Madgwick* filter, const struct IMUData* sa
     float ay = (float)sample->accelY * ACCEL_4G_SCALE;
     float az = (float)sample->accelZ * ACCEL_4G_SCALE;
 
-    float gx = (float)sample->gyroX * GYRO_500_SCALE_RAD;
-    float gy = (float)sample->gyroY * GYRO_500_SCALE_RAD;
-    float gz = (float)sample->gyroZ * GYRO_500_SCALE_RAD;
+    float gx = (float)sample->gyroX * GYRO_500_SCALE;
+    float gy = (float)sample->gyroY * GYRO_500_SCALE;
+    float gz = (float)sample->gyroZ * GYRO_500_SCALE;
 
     float mx = (float)sample->magX * MAG_SCALE;
-    float my = (float)sample->magY * MAG_SCALE;
-    float mz = (float)sample->magZ * MAG_SCALE;
+    float my = -(float)sample->magY * MAG_SCALE;
+    float mz = -(float)sample->magZ * MAG_SCALE;
 
     filter->sampleFreq = 1.0f / dt;
 

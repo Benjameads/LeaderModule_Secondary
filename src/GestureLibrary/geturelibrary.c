@@ -10,6 +10,7 @@
 #include "imu_spi.h"
 #include "driver/gpio.h"
 #include "relative_orientation.h"
+#include <string.h>
 
 void gesture_worker_task(void* arg) {
     // GestureOrientationData* gesture_data = NULL;
@@ -35,7 +36,7 @@ void gesture_worker_task(void* arg) {
 }
 
 void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data) {
-    static IMUOrientation last_orientation[NUMBER_OF_IMUS] = {IMU_FLAT_UP, IMU_FORWARD, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT}; // Store the last orientation for each IMU
+    //static IMUOrientation last_orientation[NUMBER_OF_IMUS] = {IMU_FLAT_UP, IMU_FORWARD, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT}; // Store the last orientation for each IMU
     int data_index = orientation_data[0].data_index; // Get the current data index
     static int count = 0;
 
@@ -68,13 +69,17 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
         imu_state[BOH].orientation = IMU_FLAT_UP;  // Default fallback
     }
 
-    float forward[3] = {0, 1, 0}; // or whatever direction is “forward” for your IMU
+    float forward[3] = {0, 1, 0};  // forward = +Y in local IMU frame
     float world[3];
-    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion , forward, world);
+    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, forward, world);
 
+    // Compute heading with 90° correction
     float heading_rad = atan2f(world[0], world[1]);
     float heading_deg = heading_rad * (180.0f / M_PI);
+    heading_deg -= 90.0f;
     if (heading_deg < 0) heading_deg += 360.0f;
+    if (heading_deg >= 360.0f) heading_deg -= 360.0f;
+
 
     // --- Thumb (IMU 1) Orientation ---
     //float thumb_vector[3] = {0, 0, 1};  // Assume Z+ is thumb direction (adjust if needed)
@@ -114,51 +119,66 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
         }
     }
 
-    if(count == 0) {
-        // Print the BOH orientation
-        printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
-        printf("Heading: %.2f degrees\n", heading_deg);
-        printf("Index: %s, Curl: %.2f, Spread: %.2f, Twist: %.2f\n",
-            imu_orientation_str(imu_state[2].orientation),
-            imu_state[2].relative.curl,
-            imu_state[2].relative.spread,
-            imu_state[2].relative.twist);
-    }
+    // if(count == 0) {
+    //     // Print the BOH orientation
+    //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
+    //     printf("Heading: %.2f degrees\n", heading_deg);
+    //     printf("Index: %s, Curl: %.2f, Spread: %.2f, Twist: %.2f\n",
+    //         imu_orientation_str(imu_state[2].orientation),
+    //         imu_state[2].relative.curl,
+    //         imu_state[2].relative.spread,
+    //         imu_state[2].relative.twist);
+    // }
+
+    
 
     //Use a state machine to monitor each axis to detect changes in orientation
     for (int i = 0; i < NUMBER_OF_IMUS; i++) {
-        track_axis_motion_quat(i, AXIS_CURL, &imu_state[i], orientation_data);
-        track_axis_motion_quat(i, AXIS_SPREAD, &imu_state[i], orientation_data);
-        track_axis_motion_quat(i, AXIS_TWIST, &imu_state[i], orientation_data);
-        // axis_orientation_change(i, YAW, &imu_state[i], orientation_data);
-        // axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
-        // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
+        float q_diff[4];
+        int cur = orientation_data[i].data_index;
+        int past = (cur + SAMPLE_SIZE_ORIENTATION - 1) % SAMPLE_SIZE_ORIENTATION;
+        quaternion_difference(orientation_data[i].data[past].quaternion,
+                              orientation_data[i].data[cur].quaternion,
+                              q_diff);
+    
+        // Pass q_diff into the axis tracking function
+        track_axis_motion_quat(i, AXIS_CURL, imu_state, q_diff);
+        track_axis_motion_quat(i, AXIS_SPREAD, imu_state, q_diff);
+        track_axis_motion_quat(i, AXIS_TWIST, imu_state, q_diff);
     }
+    
+    // for (int i = 0; i < NUMBER_OF_IMUS; i++) {
+    //     track_axis_motion_quat(i, AXIS_CURL, imu_state, orientation_data);
+    //     track_axis_motion_quat(i, AXIS_SPREAD, imu_state, orientation_data);
+    //     track_axis_motion_quat(i, AXIS_TWIST, imu_state, orientation_data);
+    //     // axis_orientation_change(i, YAW, &imu_state[i], orientation_data);
+    //     // axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
+    //     // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
+    // }
 
-    // if(imu_state[0].orientation != last_orientation[0]) {
-    //     printf("BOH:   %s, Pitch: %.3f \n", imu_orientation_str(imu_state[0].orientation), orientation_data[0].data[data_index].pitch);
-    //     last_orientation[0] = imu_state[0].orientation;
+    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
+        printf("Spread Movement Detected: %.3f\n", 
+            RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
+    }
+    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
+        printf("Curl Movement Detected: %.3f\n", 
+            RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
+    }
+    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
+        printf("Twist Movement Detected: %.3f\n", 
+            RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
+    }
+    // if(count == 0) {
+    //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
     // }
-    // if(imu_state[1].orientation != last_orientation[1]) {
-    //     printf("Thumb: %s\n", imu_orientation_str(imu_state[1].orientation));
-    //     last_orientation[1] = imu_state[1].orientation;
+    // if(count == 0){
+    //     printf("BOH Spread State: %s\n", 
+    //         axis_state_str(imu_state[BOH].axis[AXIS_SPREAD].state));
     // }
-    // if(imu_state[2].orientation != last_orientation[2]) {
-    //     printf("Index: %s\n", imu_orientation_str(imu_state[2].orientation));
-    //     last_orientation[2] = imu_state[2].orientation;
-    // }
-    // if(imu_state[3].orientation != last_orientation[3]) {
-    //     printf("Middle: %s\n", imu_orientation_str(imu_state[3].orientation));
-    //     last_orientation[3] = imu_state[3].orientation;
-    // }
-    // if(imu_state[4].orientation != last_orientation[4]) {
-    //     printf("Ring:  %s\n", imu_orientation_str(imu_state[4].orientation));
-    //     last_orientation[4] = imu_state[4].orientation;
-    // }
-    // if(imu_state[5].orientation != last_orientation[5]) {
-    //     printf("Pinky: %s\n", imu_orientation_str(imu_state[5].orientation));
-    //     last_orientation[5] = imu_state[5].orientation;
-    // }
+    // if (count == 0) {
+    //     AxisState s = imu_state[BOH].axis[AXIS_SPREAD].state;
+    //     printf("Raw Axis State Enum = %d\n", s);
+    // }    
 
     count++;
     if (count >= 50) {
@@ -173,58 +193,76 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
 // to identify significant movement start, peak, and change direction (i.e., gestures)
 // Lookup table for reference vectors corresponding to anatomical axes
 static const float axis_vectors[3][3] = {
-    {0, 0, 1}, // CURL: Z+ (nail direction)
-    {0, 1, 0}, // SPREAD: Y+ (finger direction)
-    {1, 0, 0}  // TWIST: X+ (side of finger)
+    {1, 0, 0},  // AXIS_CURL   → rotation around X (finger curls)
+    {0, 1, 0},  // AXIS_TWIST  → rotation around Y (finger twists)
+    {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
 };
 
-// Call this for each axis of each IMU to detect motion
-void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, OrientationDatalist* orientation_data) {
-    int cur = orientation_data[imu_index].data_index;
-    int past = (cur + 1) % SAMPLE_SIZE_ORIENTATION;
+void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, const float q_diff[4]) {
+    float axis[3], angle;
+    quaternion_to_axis_angle(q_diff, axis, &angle);
 
-    const float* ref_local = axis_vectors[which_axis];
-
-    float cur_vector[3], past_vector[3];
-    quaternion_rotate_vector(orientation_data[imu_index].data[cur].quaternion, ref_local, cur_vector);
-    quaternion_rotate_vector(orientation_data[imu_index].data[past].quaternion, ref_local, past_vector);
-
-    float dot = safe_dot(cur_vector, past_vector);
-    float angle_change = acosf(dot);  // angle in radians
-    float velocity = angle_change / ANGLE_VELOCITY_DT;
+    const float* ref_axis = axis_vectors[which_axis];
+    float signed_angle = angle * safe_dot(axis, ref_axis);
+    float raw_velocity = signed_angle / 0.01f; // rad/s at 100 Hz
 
     AxisTracker* tracker = &imu_state[imu_index].axis[which_axis];
-    tracker->angle_velocity = velocity;
+
+    // Apply exponential moving average to velocity
+    tracker->smoothed_velocity = (1.0f - EMA_ALPHA) * tracker->smoothed_velocity + EMA_ALPHA * raw_velocity;
+    tracker->angle_velocity = fabsf(tracker->smoothed_velocity); // optional for logging
 
     switch (tracker->state) {
         case AXIS_STILL:
-            if (velocity > VELOCITY_THRESHOLD) {
-                tracker->state = AXIS_INCREASING;
-                memcpy(tracker->start_vector, past_vector, sizeof(past_vector));
+            if (fabsf(tracker->smoothed_velocity) >= VELOCITY_THRESHOLD) {
+                tracker->state = tracker->smoothed_velocity > 0 ? AXIS_INCREASING : AXIS_DECREASING;
+                tracker->start_angle = 0.0f;
+                tracker->peak_velocity = tracker->smoothed_velocity;
+                tracker->reversal_counter = 0;
             }
             break;
 
         case AXIS_INCREASING:
-            if (velocity <= 0.0f) {
-                tracker->state = AXIS_PEAKED;
-                memcpy(tracker->peak_vector, cur_vector, sizeof(cur_vector));
-                float peak_angle = acosf(safe_dot(tracker->start_vector, tracker->peak_vector));
-                tracker->angle_diff = peak_angle;
+            if (tracker->smoothed_velocity < tracker->peak_velocity) {
+                if (++tracker->reversal_counter >= 2) {
+                    tracker->state = AXIS_PEAKED;
+                    tracker->angle_diff = tracker->peak_velocity * 0.01f; // angle ≈ ω * dt
+                }
             } else {
-                memcpy(tracker->peak_vector, cur_vector, sizeof(cur_vector));
+                tracker->reversal_counter = 0;
+                tracker->peak_velocity = tracker->smoothed_velocity;
+            }
+            break;
+
+        case AXIS_DECREASING:
+            if (tracker->smoothed_velocity > tracker->peak_velocity) {
+                if (++tracker->reversal_counter >= 2) {
+                    tracker->state = AXIS_PEAKED;
+                    tracker->angle_diff = -tracker->peak_velocity * 0.01f;
+                }
+            } else {
+                tracker->reversal_counter = 0;
+                tracker->peak_velocity = tracker->smoothed_velocity;
             }
             break;
 
         case AXIS_PEAKED:
             tracker->state = AXIS_STILL;
+            tracker->start_angle = 0.0f;
+            tracker->peak_velocity = 0.0f;
             tracker->angle_diff = 0.0f;
             tracker->angle_velocity = 0.0f;
-            memset(tracker->start_vector, 0, sizeof(tracker->start_vector));
-            memset(tracker->peak_vector, 0, sizeof(tracker->peak_vector));
+            tracker->smoothed_velocity = 0.0f;
+            tracker->reversal_counter = 0;
+            break;
+
+        default:
+            tracker->state = AXIS_STILL;
+            tracker->reversal_counter = 0;
+            tracker->smoothed_velocity = 0.0f;
             break;
     }
 }
-
 
 
 // This function is used to detect changes in orientation for a specific axis and IMU
@@ -378,6 +416,16 @@ const char* imu_orientation_str(IMUOrientation o) {
         case IMU_BACKWARD:   return "Backward Tilt";
         case FINGER_STRAIGHT:return "Straight";
         case FINGER_CURLED:  return "Curled";
+        default:             return "Unknown";
+    }
+}
+
+const char* axis_state_str(AxisState s) {
+    switch (s) {
+        case AXIS_STILL:     return "Still";
+        case AXIS_INCREASING:return "Increasing";
+        case AXIS_DECREASING:return "Decreasing";
+        case AXIS_PEAKED:    return "Peaked";
         default:             return "Unknown";
     }
 }

@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "imu_read.h": "c"
+        "imu_read.h": "c",
+        "cmath": "c"
     }
 }

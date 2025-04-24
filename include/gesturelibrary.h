@@ -5,6 +5,7 @@
 #include "relative_orientation.h"
 #include "espnow_comm.h"
 #include "imu_read.h"
+#include "quaternion_utils.h"
 
 typedef enum {
     GESTURE_INCOMPLETE,
@@ -19,7 +20,7 @@ typedef enum {
 #define FLAT_THRESHOLD 30.0f
 #define ANGLE_VELOCITY_DT 0.1f      // 0.1 second window = 10 samples @ 100 Hz
 #define CURLED_THRESHOLD 0.7f
-#define VELOCITY_THRESHOLD 20.0f    // deg/s threshold to detect motion
+#define VELOCITY_THRESHOLD 1.0f    // rad/s threshold to detect motion
 #define STALL_LIMIT 5               // for debounce when movement reverses
 #define FIND_MIN 0
 #define FIND_MAX 1
@@ -27,7 +28,11 @@ typedef enum {
 #define FLAT_ROLL_TOLERANCE 20.0f
 #define ROLL_FLIP_THRESHOLD 160.0f
 #define TILT_THRESHOLD 45.0f
+#define MIN_ANGLE_CHANGE   0.02f      // rad ≈ 1.1°
+#define MOTION_TOLERANCE 0.04f  // ~2.3 degrees (in radians)
+#define EMA_ALPHA          0.2f   // smoothing factor for exponential moving average
 
+#define RAD2DEG(x) ((x) * 57.2957795f)
 
 #define BOH_IS_FLAT \
     (fabsf(gesture_data[BOH].current.pitch) < FLAT_THRESHOLD && \
@@ -53,14 +58,15 @@ typedef enum {
 } AxisState;
 
 typedef struct {
-    AxisState state;
+    float angle_velocity;
+    float smoothed_velocity;  // NEW: for EMA smoothing
     float start_angle;
-    float peak_angle;
-    float angle_velocity;  // instantaneous ω
-    float angle_diff;      // peak - start
-    float start_vector[3];
-    float peak_vector[3];
+    float peak_velocity;      // Track peak smoothed velocity
+    float angle_diff;
+    int reversal_counter;
+    AxisState state;
 } AxisTracker;
+
 
 typedef enum {
     IMU_FLAT_UP,
@@ -87,7 +93,7 @@ typedef enum {
 
 typedef struct {
     IMUOrientation orientation;
-    AxisTracker axis[3]; // yaw, pitch, roll
+    AxisTracker axis[3]; // curl, spread, twist
     RelativeRotation relative;
 } IMUState;
 
@@ -98,11 +104,14 @@ float shortest_angle_diff(float a, float b);
 
 void gesture_worker_task(void* arg);
 void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data);
-void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
+//void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
+//void track_axis_motion_quat(int imu_index, RelativeAxis axis, IMUState* imu_state, OrientationDatalist* orientation_data);
+void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, const float q_diff[4]);
 float peak_angle(int imu_index, Axis axis, const OrientationDatalist* orientation_data, int max_boolean);
 float wrap_angle_deg(float angle);
 float shortest_angle_diff(float a, float b);
 const char* imu_orientation_str(IMUOrientation o);
+const char* axis_state_str(AxisState s);
 
 GestureState the_bird(IMUState* imu_state);
 //GestureState disperse(GestureOrientationData* gesture_data);

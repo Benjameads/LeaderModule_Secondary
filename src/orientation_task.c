@@ -35,8 +35,8 @@ void gesture_queue_init(void) {
     The GestureOrientationData is updated with current and previous orientation data for gesture processing
 **************************************************************************************************/
 void imu_orientation_worker_task(void* arg) {
-    const float timeinterval = 1.0f / SAMPLE_RATE; // Time interval in seconds
-    float t = 0.0f; // Initialize time variable
+    // const float timeinterval = 1.0f / SAMPLE_RATE; // Time interval in seconds
+    // float t = 0.0f; // Initialize time variable
     //OrientationDatalist orientation_data[NUMBER_OF_IMUS];
     //static GestureOrientationData gesture_data[NUMBER_OF_IMUS]; // Array to hold gesture data for each IMU
     //GestureOrientationData* gesture_data_ptr = NULL; // Pointer to gesture data
@@ -58,6 +58,16 @@ void imu_orientation_worker_task(void* arg) {
 
             float yaw, pitch, roll;
             update_imu_orientation_from_raw(&orientation_data[imu_index].filter , &imu_packet->data[0], 1.0f / SAMPLE_RATE, &yaw, &pitch, &roll);
+
+            // static int count = 0;
+            // int debug_imu = BOH;
+            // if(count == 0 && imu_index == debug_imu) {
+            //     printf("Magnetometer: %.2f, %.2f, %.2f\n", imu_packet->data->magX*0.15, imu_packet->data->magY*0.15, imu_packet->data->magZ*0.15);
+            // }
+
+            // if(imu_index == debug_imu) {
+            //     count = (count + 1) % 10; // Reset count every 50 samples
+            // }
 
             // //Update Gesture data for the gesture task
             // gesture_data[imu_index].previous.yaw = gesture_data[imu_index].current.yaw;
