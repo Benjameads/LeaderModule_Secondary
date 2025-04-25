@@ -1,43 +1,78 @@
-// #include "gesturelibrary.h"
-// #include "orientation_task.h"
-// #include "imu_read.h"
+#include <math.h>
+#include "gesturelibrary.h"
 
+#define DISP_OUT_THRESHOLD_DEG   60.0f   // Minimum degrees swept outward
+#define DISP_BACK_THRESHOLD_DEG  60.0f   // Minimum degrees swept back
 
-// This will use statemachine style logic, where based on the current state and orientation data
-// the next state is determined. The state machine will be reset to the start state when the gesture is complete or cancelled.
+typedef enum {
+    DISP_STATE_IDLE = 0,
+    DISP_STATE_OUTWARD,
+    DISP_STATE_RETURN
+} DisperseState;
 
-// GestureState disperse(IMUState* imu_data)
-// {
-//     if (imu_data[BOH].axis[AXIS_SPREAD].state == AXIS_PEAKED)
-//     {
-//         // Check if the gesture is complete
-//         if (imu_data[BOH].axis[AXIS_SPREAD].angle_diff > 30.0f) // Example threshold for completion
-//         {
-//             send_gesture_byte('d'); // Send the gesture to the audio module
-//             printf("Disperse gesture detected!\n"); // Print message indicating gesture detection
-//             return GESTURE_COMPLETE;
-//         }
-//     }
-    // switch(state) {
-    //     case GESTURE_START:
-            
-    //         break;
+// Persisting state across calls
+static DisperseState disp_state = DISP_STATE_IDLE;
+static float         disp_accum = 0.0f;
 
-    //     case GESTURE_STEP_1:
-            
-    //         break;
+GestureState disperse(IMUState *imu_state) {
+    // We require palm-down orientation for this gesture
+    if (imu_state[BOH].orientation != IMU_FLAT_DOWN) {
+        disp_state = DISP_STATE_IDLE;
+        disp_accum  = 0.0f;
+        return GESTURE_INCOMPLETE;
+    }
 
-    //     case GESTURE_STEP_2:
-    //         break;
+    AxisTracker *tracker = &imu_state[BOH].axis[AXIS_SPREAD];
 
-    //     case GESTURE_STALL:
-           
-    //         break;
+    switch (disp_state) {
+        case DISP_STATE_IDLE:
+            // Detect start of outward motion
+            if (tracker->state == AXIS_INCREASING) {
+                disp_accum  = tracker->angle_diff;
+                disp_state  = DISP_STATE_OUTWARD;
+            }
+            break;
 
-    //     case GESTURE_COMPLETE:
-            
-    // }
+        case DISP_STATE_OUTWARD:
+            // While still increasing, keep summing
+            if (tracker->state == AXIS_INCREASING) {
+                disp_accum += tracker->angle_diff;
+            }
+            // Once we hit the peak of the outward sweep...
+            else if (tracker->state == AXIS_PEAKED) {
+                // Check if we moved far enough
+                if (disp_accum >= DISP_OUT_THRESHOLD_DEG) {
+                    disp_state = DISP_STATE_RETURN;
+                    disp_accum = 0.0f;
+                } else {
+                    // Not far enough → reset
+                    disp_state = DISP_STATE_IDLE;
+                    disp_accum = 0.0f;
+                }
+            }
+            break;
 
-    // Return the current state of the gesture
-//     return state;
-// }
+        case DISP_STATE_RETURN:
+            // Accumulate the return (decreasing) motion
+            if (tracker->state == AXIS_DECREASING) {
+                disp_accum += fabsf(tracker->angle_diff);
+            }
+            // On the peak of the return motion...
+            else if (tracker->state == AXIS_PEAKED) {
+                if (disp_accum >= DISP_BACK_THRESHOLD_DEG) {
+                    // Gesture complete!
+                    send_gesture_byte('A');
+                    disp_state = DISP_STATE_IDLE;
+                    disp_accum = 0.0f;
+                    return GESTURE_COMPLETE;
+                } else {
+                    // Return too small → reset
+                    disp_state = DISP_STATE_IDLE;
+                    disp_accum = 0.0f;
+                }
+            }
+            break;
+    }
+
+    return GESTURE_INCOMPLETE;
+}
