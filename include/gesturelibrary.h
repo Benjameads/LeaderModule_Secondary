@@ -13,8 +13,7 @@ typedef enum {
     GESTURE_COMPLETE
 } GestureState;
 
-#define STALLLIMIT 5 // The limit for the stall state to be considered a valid gesture
-
+#define STALLLIMIT 8 // The limit for the stall state to be considered a valid gesture
 #define CURLED_THRESHOLD 0.7f
 #define VELOCITY_THRESHOLD 1.0f    // rad/s threshold to detect motion
 #define TILT_THRESHOLD 45.0f
@@ -51,11 +50,18 @@ typedef enum {
 typedef struct {
     float angle_velocity;
     float smoothed_velocity;  // NEW: for EMA smoothing
-    float start_vector[3]; // Start vector for the axis
-    float peak_vector[3];  // Stop vector for the axis
+    float start_quat[4]; // Start quaternion for the axis
+    float peak_quat[4];  // Stop quaternion for the axis
+    // float start_vector[3]; // Start vector for the axis
+    // float peak_vector[3];  // Stop vector for the axis
+    float possible_peak_angle; // Angle difference between start and stop vector
+    float prev_peak_angle; // Angle at the peak
     float angle_diff;
     int reversal_counter;
     AxisState state, restore_state;
+
+    float x_world_start[3]; // X vector in world frame
+    float y_world_start[3]; // Y vector in world frame
 } AxisTracker;
 
 
@@ -77,9 +83,9 @@ typedef enum {
 } Axis;
 
 typedef enum {
-    AXIS_CURL = 0,
-    AXIS_SPREAD = 1,
-    AXIS_TWIST = 2
+    AXIS_CURL,
+    AXIS_TWIST,
+    AXIS_SPREAD
 } RelativeAxis;
 
 typedef struct {

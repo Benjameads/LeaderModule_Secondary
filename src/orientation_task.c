@@ -59,17 +59,17 @@ void imu_orientation_worker_task(void* arg) {
             float yaw, pitch, roll;
             update_imu_orientation_from_raw(&orientation_data[imu_index].filter , &imu_packet->data[0], 1.0f / SAMPLE_RATE, &yaw, &pitch, &roll);
 
-            static int count = 0;
-            int debug_imu = BOH;
-            if(count == 0 && imu_index == debug_imu) {
-                printf("Magnetometer: %.2f, %.2f, %.2f\n", imu_packet->data->magX*0.15, imu_packet->data->magY*0.15, imu_packet->data->magZ*0.15);
-                printf("Accelerometer: %.2f, %.2f, %.2f\n", imu_packet->data->accelX*0.15, imu_packet->data->accelY*0.15, imu_packet->data->accelZ*0.15);
-                printf("Gyroscope: %.2f, %.2f, %.2f\n", imu_packet->data->gyroX*0.15, imu_packet->data->gyroY*0.15, imu_packet->data->gyroZ*0.15);
-            }
+            // static int count = 0;
+            // int debug_imu = BOH;
+            // if(count == 0 && imu_index == debug_imu) {
+            //     printf("Magnetometer: %.2f, %.2f, %.2f\n", imu_packet->data->magX*0.15, imu_packet->data->magY*0.15, imu_packet->data->magZ*0.15);
+            //     printf("Accelerometer: %.2f, %.2f, %.2f\n", imu_packet->data->accelX*0.15, imu_packet->data->accelY*0.15, imu_packet->data->accelZ*0.15);
+            //     printf("Gyroscope: %.2f, %.2f, %.2f\n", imu_packet->data->gyroX*0.15, imu_packet->data->gyroY*0.15, imu_packet->data->gyroZ*0.15);
+            // }
 
-            if(imu_index == debug_imu) {
-                count = (count + 1) % 10; // Reset count every 50 samples
-            }
+            // if(imu_index == debug_imu) {
+            //     count = (count + 1) % 10; // Reset count every 50 samples
+            // }
 
             // //Update Gesture data for the gesture task
             // gesture_data[imu_index].previous.yaw = gesture_data[imu_index].current.yaw;
