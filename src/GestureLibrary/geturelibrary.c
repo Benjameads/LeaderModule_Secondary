@@ -263,9 +263,9 @@ void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* im
                     tracker->restore_state = AXIS_STILL; // Reset restore state
                 }
             } else {
-                float possible_peak = angle_between_projected_vectors(tracker->start_vector, tracker->peak_vector, axis_vectors[which_axis]); // Calculate angle difference
-                if (fabsf(possible_peak) > DEG2RAD(10.0f)) { // Arbitrary threshold to avoid noise
-                    tracker->angle_diff = possible_peak; // Update angle difference
+                float possible_peak_angle = angle_between_projected_vectors(tracker->start_vector, tracker->peak_vector, axis_vectors[which_axis]); // Calculate angle difference
+                if (fabsf(possible_peak_angle) > DEG2RAD(10.0f)) { // Arbitrary threshold to avoid noise
+                    tracker->angle_diff = possible_peak_angle; // Update angle difference
                     tracker->state = AXIS_PEAKED; // Set state to peaked
                 } else {
                     tracker->state =  AXIS_STILL; // Restore to previous state
