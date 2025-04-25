@@ -57,3 +57,35 @@ void compare_orientation(const float vec_a[3], const float vec_b[3], RelativeRot
     result->twist  = result->axis[1] * result->angle;
     result->spread = result->axis[2] * result->angle;
 }
+
+// Computes the cross product: result = a × b
+void cross_product(const float a[3], const float b[3], float result[3]) {
+    result[0] = a[1] * b[2] - a[2] * b[1]; // X
+    result[1] = a[2] * b[0] - a[0] * b[2]; // Y
+    result[2] = a[0] * b[1] - a[1] * b[0]; // Z
+}
+
+// Projects vector v onto a plane orthogonal to normal n
+void project_onto_plane(const float v[3], const float n[3], float out[3]) {
+    float dot = v[0]*n[0] + v[1]*n[1] + v[2]*n[2];  // v ⋅ n
+    out[0] = v[0] - dot * n[0];
+    out[1] = v[1] - dot * n[1];
+    out[2] = v[2] - dot * n[2];
+}
+
+float angle_between_projected_vectors(const float a[3], const float b[3], const float axis[3]) {
+    float a_norm[3] = {a[0], a[1], a[2]};
+    float b_norm[3] = {b[0], b[1], b[2]};
+    normalize_vector(a_norm);
+    normalize_vector(b_norm);
+
+    float dot = safe_dot(a_norm, b_norm);
+    float angle = acosf(dot);
+
+    float cross[3];
+    cross_product(a_norm, b_norm, cross);
+    float sign = safe_dot(cross, axis);  // Signed rotation around the axis
+
+    return angle * (sign >= 0 ? 1.0f : -1.0f); // Radians
+}
+

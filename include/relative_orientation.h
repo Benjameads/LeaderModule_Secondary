@@ -17,5 +17,8 @@ void normalize_vector(float v[3]);
 float safe_dot(const float a[3], const float b[3]);
 void quaternion_rotate_vector(const float q[4], const float v[3], float out[3]);
 void compare_orientation(const float vec_a[3], const float vec_b[3], RelativeRotation* result);
+void cross_product(const float a[3], const float b[3], float result[3]);
+void project_onto_plane(const float v[3], const float normal[3], float out[3]);
+float angle_between_projected_vectors(const float a[3], const float b[3], const float axis[3]);
 
 #endif // RELATIVE_ORIENTATION_H

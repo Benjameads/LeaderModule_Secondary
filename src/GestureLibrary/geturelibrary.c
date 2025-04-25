@@ -12,6 +12,13 @@
 #include "relative_orientation.h"
 #include <string.h>
 
+static const float arrow_zp[3] = {0, 0, 1}; // Local Z+ axis
+static const float axis_vectors[3][3] = {
+    {1, 0, 0},  // AXIS_CURL   → rotation around X (finger curls)
+    {0, 1, 0},  // AXIS_TWIST  → rotation around Y (finger twists)
+    {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
+};
+
 void gesture_worker_task(void* arg) {
     // GestureOrientationData* gesture_data = NULL;
     // GestureState disperse_state; // Initialize the gesture state
@@ -142,18 +149,18 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
         // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
     }
 
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
-        printf("Spread Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
-    }
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
-        printf("Curl Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
-    }
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
-        printf("Twist Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
-    }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
+    //     printf("Spread Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
+    // }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
+    //     printf("Curl Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
+    // }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
+    //     printf("Twist Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
+    // }
     // if(count == 0) {
     //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
     // }
@@ -178,79 +185,113 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
 // It tracks the angular velocity between world vectors rotated from local IMU axes
 // to identify significant movement start, peak, and change direction (i.e., gestures)
 // Lookup table for reference vectors corresponding to anatomical axes
-static const float axis_vectors[3][3] = {
-    {1, 0, 0},  // AXIS_CURL   → rotation around X (finger curls)
-    {0, 1, 0},  // AXIS_TWIST  → rotation around Y (finger twists)
-    {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
-};
-
 void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* imu_state, OrientationDatalist* orientation_data) {
     float v1[3], v2[3];
-    float q_prev[4], q_curr[4];
+    float* q_prev;
+    float* q_curr;
     int cur = orientation_data[imu_index].data_index;
     int past = (cur + SAMPLE_SIZE_ORIENTATION - 1) % SAMPLE_SIZE_ORIENTATION;
 
+    q_prev = orientation_data[imu_index].data[past].quaternion; // Quaternion 1 sample ago
+    q_curr = orientation_data[imu_index].data[cur].quaternion; // Current quaternion
+
     // Rotate the axis to world frame
-    quaternion_rotate_vector(q_prev, axis_vectors[which_axis], v1);
-    quaternion_rotate_vector(q_curr, axis_vectors[which_axis], v2);
+    quaternion_rotate_vector(q_prev, arrow_zp, v1);
+    quaternion_rotate_vector(q_curr, arrow_zp, v2);
 
-    // Calculate angle between them
-    float dot = safe_dot(v1, v2);
-    dot = fminf(fmaxf(dot, -1.0f), 1.0f); // Clamp to avoid NaN
-    float angle = acosf(dot); // Angle in radians
+    // Project onto axis-of-interest's orthogonal plane
+    float v1_proj[3], v2_proj[3];
+    project_onto_plane(v1, axis_vectors[which_axis], v1_proj);
+    project_onto_plane(v2, axis_vectors[which_axis], v2_proj);
 
-    // Direction: use cross product to determine positive or negative rotation
-    float cross[3];
-    cross_product(v1, v2, cross);
+    // Normalize before angle math
+    normalize_vector(v1_proj);
+    normalize_vector(v2_proj);
 
-    // Project onto world axis that aligns with expected direction of motion
-    float direction = safe_dot(cross, axis_vectors[which_axis]); // +1 or -1 depending on sign
-    float raw_velocity = (angle / SAMPLE_PERIOD_SEC) * (direction >= 0 ? 1 : -1);
+    float angle = angle_between_projected_vectors(v1_proj, v2_proj, axis_vectors[which_axis]);
+    float raw_signed_velocity = (angle / SAMPLE_PERIOD_SEC); // Angle in radians per second
     
     AxisTracker* tracker = &imu_state[imu_index].axis[which_axis];
 
     // Apply exponential moving average to velocity
-    tracker->smoothed_velocity = (1.0f - EMA_ALPHA) * tracker->smoothed_velocity + EMA_ALPHA * raw_velocity;
+    tracker->smoothed_velocity = (1.0f - EMA_ALPHA) * tracker->smoothed_velocity + EMA_ALPHA * raw_signed_velocity;
     tracker->angle_velocity = fabsf(tracker->smoothed_velocity); // optional for logging
 
     switch (tracker->state) {
         case AXIS_STILL:
-            if (fabsf(tracker->smoothed_velocity) >= VELOCITY_THRESHOLD) {
+            if (fabsf(tracker->smoothed_velocity) > VELOCITY_THRESHOLD) {
                 tracker->state = tracker->smoothed_velocity > 0 ? AXIS_INCREASING : AXIS_DECREASING;
-                tracker->start_angle = 0.0f;
-                tracker->peak_velocity = tracker->smoothed_velocity;
+                tracker->start_vector[0] = v1_proj[0]; // Save the start vector
+                tracker->start_vector[1] = v1_proj[1]; // Save the start vector
+                tracker->start_vector[2] = v1_proj[2]; // Save the start vector
                 tracker->reversal_counter = 0;
             }
             break;
 
         case AXIS_INCREASING:
-            if (tracker->smoothed_velocity < tracker->peak_velocity) {
-                if (++tracker->reversal_counter >= 2) {
-                    tracker->state = AXIS_PEAKED;
-                    tracker->angle_diff = tracker->peak_velocity * 0.01f; // angle ≈ ω * dt
-                }
+            if (tracker->smoothed_velocity < VELOCITY_THRESHOLD) {
+                tracker->state = AXIS_PEAKING;
+                tracker->restore_state = AXIS_INCREASING; // Save the state for restoration
             } else {
                 tracker->reversal_counter = 0;
-                tracker->peak_velocity = tracker->smoothed_velocity;
+                tracker->peak_vector[0] = v2_proj[0]; // Update peak vector
+                tracker->peak_vector[1] = v2_proj[1]; // Update peak vector
+                tracker->peak_vector[2] = v2_proj[2]; // Update peak vector
             }
             break;
 
         case AXIS_DECREASING:
-            if (tracker->smoothed_velocity > tracker->peak_velocity) {
-                if (++tracker->reversal_counter >= 2) {
-                    tracker->state = AXIS_PEAKED;
-                    tracker->angle_diff = -tracker->peak_velocity * 0.01f;
-                }
+            if (tracker->smoothed_velocity > -VELOCITY_THRESHOLD) {
+                tracker->state = AXIS_PEAKING;
+                tracker->restore_state = AXIS_DECREASING; // Save the state for restoration
             } else {
                 tracker->reversal_counter = 0;
-                tracker->peak_velocity = tracker->smoothed_velocity;
+                tracker->peak_vector[0] = v2_proj[0]; // Update peak vector
+                tracker->peak_vector[1] = v2_proj[1]; // Update peak vector
+                tracker->peak_vector[2] = v2_proj[2]; // Update peak vector
+            }
+            break;
+
+        case AXIS_PEAKING:
+            if(tracker->reversal_counter < STALLLIMIT) {
+                tracker->reversal_counter++;
+                if(tracker->restore_state == AXIS_INCREASING && tracker->smoothed_velocity > VELOCITY_THRESHOLD) {
+                    tracker->state = AXIS_INCREASING; // Continue increasing
+                    tracker->restore_state = AXIS_STILL; // Reset restore state
+                } else if(tracker->restore_state == AXIS_DECREASING && tracker->smoothed_velocity < -VELOCITY_THRESHOLD) {
+                    tracker->state = AXIS_DECREASING; // Continue decreasing
+                    tracker->restore_state = AXIS_STILL; // Reset restore state
+                }
+            } else {
+                float possible_peak = angle_between_projected_vectors(tracker->start_vector, tracker->peak_vector, axis_vectors[which_axis]); // Calculate angle difference
+                if (fabsf(possible_peak) > DEG2RAD(10.0f)) { // Arbitrary threshold to avoid noise
+                    tracker->angle_diff = possible_peak; // Update angle difference
+                    tracker->state = AXIS_PEAKED; // Set state to peaked
+                } else {
+                    tracker->state =  AXIS_STILL; // Restore to previous state
+                    tracker->reversal_counter = 0; // Reset reversal counter
+                    tracker->smoothed_velocity = 0.0f; // Reset smoothed velocity
+                    tracker->start_vector[0] = 0.0f; // Reset start vector
+                    tracker->start_vector[1] = 0.0f; // Reset start vector
+                    tracker->start_vector[2] = 0.0f; // Reset start vector
+                    tracker->peak_vector[0] = 0.0f; // Reset peak vector
+                    tracker->peak_vector[1] = 0.0f; // Reset peak vector
+                    tracker->peak_vector[2] = 0.0f; // Reset peak vector
+                    tracker->angle_diff = 0.0f; // Reset angle difference
+                    tracker->angle_velocity = 0.0f; // Reset angle velocity
+                    tracker->smoothed_velocity = 0.0f; // Reset smoothed velocity
+                }
             }
             break;
 
         case AXIS_PEAKED:
             tracker->state = AXIS_STILL;
-            tracker->start_angle = 0.0f;
-            tracker->peak_velocity = 0.0f;
+            tracker->start_vector[0] = 0.0f; // Reset start vector
+            tracker->start_vector[1] = 0.0f; // Reset start vector
+            tracker->start_vector[2] = 0.0f; // Reset start vector
+            tracker->peak_vector[0] = 0.0f; // Reset peak vector
+            tracker->peak_vector[1] = 0.0f; // Reset peak vector
+            tracker->peak_vector[2] = 0.0f; // Reset peak vector
             tracker->angle_diff = 0.0f;
             tracker->angle_velocity = 0.0f;
             tracker->smoothed_velocity = 0.0f;

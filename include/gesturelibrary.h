@@ -18,10 +18,11 @@ typedef enum {
 #define CURLED_THRESHOLD 0.7f
 #define VELOCITY_THRESHOLD 1.0f    // rad/s threshold to detect motion
 #define TILT_THRESHOLD 45.0f
-#define EMA_ALPHA          0.1f   // smoothing factor for exponential moving average
+#define EMA_ALPHA          0.2f   // smoothing factor for exponential moving average
 #define SAMPLE_PERIOD_SEC 0.01f // 10ms sample period
 
 #define RAD2DEG(x) ((x) * 57.2957795f)
+#define DEG2RAD(deg) ((deg) * 0.01745329252f)
 
 #define BOH_IS_FLAT \
     (fabsf(gesture_data[BOH].current.pitch) < FLAT_THRESHOLD && \
@@ -50,11 +51,11 @@ typedef enum {
 typedef struct {
     float angle_velocity;
     float smoothed_velocity;  // NEW: for EMA smoothing
-    float start_angle;
-    float peak_velocity;      // Track peak smoothed velocity
+    float start_vector[3]; // Start vector for the axis
+    float peak_vector[3];  // Stop vector for the axis
     float angle_diff;
     int reversal_counter;
-    AxisState state;
+    AxisState state, restore_state;
 } AxisTracker;
 
 
