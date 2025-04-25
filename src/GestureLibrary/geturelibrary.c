@@ -68,7 +68,7 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     } else {
         imu_state[BOH].orientation = IMU_FLAT_UP;  // Default fallback
     }
-
+    
     float forward[3] = {0, 1, 0};  // forward = +Y in local IMU frame
     float world[3];
     quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, forward, world);
