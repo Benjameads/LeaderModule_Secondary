@@ -12,6 +12,24 @@
 #include "relative_orientation.h"
 #include <string.h>
 
+//static const float arrow_zp[3] = {0, 0, 1}; // Local Z+ axis
+//static const float arrow_yp[3] = {0, 1, 0}; // Local Z+ axis
+// static const float axis_vectors[3][3] = {
+//     {1, 0, 0},  // AXIS_CURL   → rotation around X (finger curls)
+//     {0, 1, 0},  // AXIS_TWIST  → rotation around Y (finger twists)
+//     {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
+// };
+static const float x_local[3][3] = {
+    {0, 1, 0},  // AXIS_CURL → Y+ (points forward from finger)
+    {1, 0, 0}, // AXIS_TWIST → X+ (points right from finger)
+    {1, 0, 0}   // AXIS_SPREAD → X+ (points right from finger)
+};
+static const float y_local[3][3] = {
+    {0, 0, 1},  // AXIS_CURL → Z+ (points up from finger)
+    {0, 0, 1},  // AXIS_TWIST → Z+ (points up from finger)
+    {0, 1, 0}   // AXIS_SPREAD → Y+ (points forward from finger)
+};
+
 void gesture_worker_task(void* arg) {
     // GestureOrientationData* gesture_data = NULL;
     // GestureState disperse_state; // Initialize the gesture state
@@ -32,41 +50,63 @@ void gesture_worker_task(void* arg) {
 
         // // Call the gesture functions to process the gesture data
         // disperse_state = disperse(gesture_data);
+        freeze(imu_state); // Call the freeze function to check for the freeze gesture
+        one(imu_state); // Call the one function to check for the one gesture
+        two(imu_state); // Call the two function to check for the two gesture
+        three(imu_state); // Call the three function to check for the three gesture
+        four(imu_state); // Call the four function to check for the four gesture
+        five(imu_state); // Call the five function to check for the five gesture
+        six(imu_state); // Call the six function to check for the six gesture
+        seven(imu_state); // Call the seven function to check for the seven gesture
+        eight(imu_state); // Call the eight function to check for the eight gesture
+        nine(imu_state); // Call the nine function to check for the nine gesture
+        the_bird(imu_state); // Call the the_bird function to check for the bird gesture
+
     }
 }
 
 void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orientation_data) {
     //static IMUOrientation last_orientation[NUMBER_OF_IMUS] = {IMU_FLAT_UP, IMU_FORWARD, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT, FINGER_STRAIGHT}; // Store the last orientation for each IMU
     int data_index = orientation_data[0].data_index; // Get the current data index
-    static int count = 0;
+
+    static int count = 0; // Counter for debugging
 
     // Detect the orientation of each IMU based on the current orientation data
     
     // --- Back of Hand (IMU 0) Orientation ---
-    float arrow_zp[3] = {0, 0, 1};  // Local Z+ axis
-    float boh_y_world[3] = {0.0f, 0.0f, 0.0f}; // Initialize the BOH world vector
-    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, arrow_zp, boh_y_world);
+    // Define local vectors
+    float arrow_xp[3] = {1, 0, 0}; // Local X+ axis (thumb direction)
+    float arrow_yp[3] = {0, 1, 0}; // Local Y+ axis (finger direction)
+    float arrow_zp[3] = {0, 0, 1}; // Local Z+ axis (palm up direction)
 
-    gpio_set_level(DEBUGPIN, 1); // Set the debug pin high to indicate sample processing start
+    // Rotate into world frame
+    float boh_x_world[3] = {0};
+    float boh_y_world[3] = {0};
+    float boh_z_world[3] = {0};
+    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, arrow_xp, boh_x_world);
+    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, arrow_yp, boh_y_world);
+    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, arrow_zp, boh_z_world);
 
     // Threshold constants
-    #define VERTICAL_THRESHOLD 0.75f  // > ~41.4° tilt
-    #define HORIZONTAL_TOLERANCE 0.5f // within ~60°
+    #define VERTICAL_THRESHOLD 0.75f
+    #define HORIZONTAL_THRESHOLD 0.5f
 
-    if (boh_y_world[2] > VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_FLAT_UP;  // Fingers pointing up
-    } else if (boh_y_world[2] < -VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_FLAT_DOWN;  // Fingers pointing down
-    } else if (boh_y_world[1] > VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_FORWARD;  // Fingers pointing forward
-    } else if (boh_y_world[1] < -VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_BACKWARD;  // Fingers pointing backward
-    } else if (boh_y_world[0] > VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_RIGHT;  // Fingers pointing right
-    } else if (boh_y_world[0] < -VERTICAL_THRESHOLD) {
-        imu_state[BOH].orientation = IMU_LEFT;  // Fingers pointing left
+    gpio_set_level(DEBUGPIN, 1); // Start processing
+
+    if (fabsf(boh_x_world[2]) < HORIZONTAL_THRESHOLD && fabsf(boh_y_world[2]) < HORIZONTAL_THRESHOLD && boh_z_world[2] > VERTICAL_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_FLAT_UP; 
+    } else if (fabsf(boh_x_world[2]) < HORIZONTAL_THRESHOLD && fabsf(boh_y_world[2]) < HORIZONTAL_THRESHOLD && boh_z_world[2] < -VERTICAL_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_FLAT_DOWN;
+    } else if (fabsf(boh_x_world[2]) < HORIZONTAL_THRESHOLD && boh_y_world[2] < -VERTICAL_THRESHOLD && fabsf(boh_z_world[2]) < HORIZONTAL_THRESHOLD ) {
+        imu_state[BOH].orientation = IMU_FORWARD;
+    } else if (fabsf(boh_x_world[2]) < HORIZONTAL_THRESHOLD && boh_y_world[2] > VERTICAL_THRESHOLD && fabsf(boh_z_world[2]) < HORIZONTAL_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_BACKWARD;
+    } else if (boh_x_world[2] > VERTICAL_THRESHOLD && fabsf(boh_y_world[2]) < HORIZONTAL_THRESHOLD && fabsf(boh_z_world[2]) < HORIZONTAL_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_LEFT;
+    } else if (boh_x_world[2] < -VERTICAL_THRESHOLD && fabsf(boh_y_world[2]) < HORIZONTAL_THRESHOLD && fabsf(boh_z_world[2]) < HORIZONTAL_THRESHOLD) {
+        imu_state[BOH].orientation = IMU_RIGHT;
     } else {
-        imu_state[BOH].orientation = IMU_FLAT_UP;  // Default fallback
+        imu_state[BOH].orientation = IMU_ORIENTATION_UNKNOWN;  // Default fallback
     }
     
     float forward[3] = {0, 1, 0};  // forward = +Y in local IMU frame
@@ -80,37 +120,54 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     if (heading_deg < 0) heading_deg += 360.0f;
     if (heading_deg >= 360.0f) heading_deg -= 360.0f;
 
+    // // --- Thumb (IMU 1) Orientation ---
 
-    // --- Thumb (IMU 1) Orientation ---
-    //float thumb_vector[3] = {0, 0, 1};  // Assume Z+ is thumb direction (adjust if needed)
-    float thumb_world[3], boh_world[3];
+    quaternion_rotate_vector(orientation_data[THUMB].data[data_index].quaternion, forward, world);
 
-    // Rotate thumb and BOH vectors into world space
-    quaternion_rotate_vector(orientation_data[1].data[data_index].quaternion, arrow_zp, thumb_world);
-    quaternion_rotate_vector(orientation_data[BOH].data[data_index].quaternion, arrow_zp, boh_world);
+    // Compute heading with 90° correction
+    float thumb_heading_rad = atan2f(world[0], world[1]);
+    float thumb_heading_deg = thumb_heading_rad * (180.0f / M_PI);
+    thumb_heading_deg -= 90.0f;
+    if (thumb_heading_deg < 0) thumb_heading_deg += 360.0f;
+    if (thumb_heading_deg >= 360.0f) thumb_heading_deg -= 360.0f;
 
-    // Compare thumb to BOH
-    compare_orientation(boh_world, thumb_world, &imu_state[1].relative);
+    float* q_boh;
+    q_boh = orientation_data[BOH].data[data_index].quaternion;
+    float* q_thumb;
+    q_thumb = orientation_data[THUMB].data[data_index].quaternion; // Current quaternion for thumb IMU
 
-    // Thresholds for orientation behavior
-    if (imu_state[1].relative.curl > TILT_THRESHOLD) {
-        imu_state[1].orientation = IMU_FORWARD;
-    } else if (imu_state[1].relative.curl < -TILT_THRESHOLD) {
-        imu_state[1].orientation = IMU_BACKWARD;
-    } else if (imu_state[1].relative.spread > TILT_THRESHOLD) {
-        imu_state[1].orientation = IMU_RIGHT;
-    } else if (imu_state[1].relative.spread < -TILT_THRESHOLD) {
-        imu_state[1].orientation = IMU_LEFT;
+    float thumb_x_local[3] = {0, 1, 0}; // Local X+ axis (Forward from BOH & forward from thumb nail)
+    float thumb_y_local[3] = {-1, 0, 0}; // Local Y+ axis (Left from BOH & and left from thumb nail)
+
+    float thumb_spread = rotation_about_axis(q_boh, q_thumb, thumb_x_local, thumb_y_local);
+    //float thumb_curl = rotation_about_axis(q_boh, q_thumb, x_local[AXIS_CURL], y_local[AXIS_CURL]);
+
+    if(thumb_spread > 0.15f) {
+        imu_state[THUMB].orientation = THUMB_EXTENDED;
+    } else if (thumb_spread < -0.5f) {
+        imu_state[THUMB].orientation = THUMB_UNDER_PALM;
     } else {
-        imu_state[1].orientation = IMU_FLAT_UP;
+        imu_state[THUMB].orientation = THUMB_AlIGNED;
     }
 
+    //print thumb spread angle and boh heading
+    // if(count == 0) {
+    //     printf("IMU %d, Orientation: %s\n", THUMB, imu_orientation_str(imu_state[THUMB].orientation));
+    // }
+    // if(count == 0) {
+    //     printf("IMU %d, Spread: %.3f, T_Heading: %.3f, B_Heading: %.3f\n", THUMB, thumb_spread, thumb_heading_deg, heading_deg);
+    // }
+
+    float* q_finger;
     // --- Fingers (IMUs 2-6) Orientation ---
     for (int i = 2; i < NUMBER_OF_IMUS; i++) {
-        float finger_world[3];
+        q_finger = orientation_data[i].data[data_index].quaternion; // Current quaternion for finger IMU
 
-        quaternion_rotate_vector(orientation_data[i].data[data_index].quaternion, arrow_zp, finger_world);
-        compare_orientation(boh_world, finger_world, &imu_state[i].relative);
+        imu_state[i].relative.curl = rotation_about_axis(q_boh, q_finger, x_local[AXIS_CURL], y_local[AXIS_CURL]);
+
+        // if(count == 0 /*&& i == PINKY*/) {
+        //     printf("IMU %d, Curl: %.3f\n", i, imu_state[i].relative.curl);
+        // }
 
         if (fabsf(imu_state[i].relative.curl) > CURLED_THRESHOLD) {
             imu_state[i].orientation = FINGER_CURLED;
@@ -118,18 +175,6 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
             imu_state[i].orientation = FINGER_STRAIGHT;
         }
     }
-
-    // if(count == 0) {
-    //     // Print the BOH orientation
-    //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
-    //     printf("Heading: %.2f degrees\n", heading_deg);
-    //     printf("Index: %s, Curl: %.2f, Spread: %.2f, Twist: %.2f\n",
-    //         imu_orientation_str(imu_state[2].orientation),
-    //         imu_state[2].relative.curl,
-    //         imu_state[2].relative.spread,
-    //         imu_state[2].relative.twist);
-    // }
-
     
 
     //Use a state machine to monitor each axis to detect changes in orientation    
@@ -141,6 +186,17 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
         // axis_orientation_change(i, PITCH, &imu_state[i], orientation_data);
         // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
     }
+
+    // if(count == 0) {
+    //     // Print the all relative orientations for debugging
+    //     printf("BOH: %s, THUMB: %s, INDEX: %s, MIDDLE: %s, RING: %s, PINKY: %s\n", 
+    //         imu_orientation_str(imu_state[BOH].orientation), 
+    //         imu_orientation_str(imu_state[THUMB].orientation),
+    //         imu_orientation_str(imu_state[INDEX].orientation),
+    //         imu_orientation_str(imu_state[MIDDLE].orientation),
+    //         imu_orientation_str(imu_state[RING].orientation),
+    //         imu_orientation_str(imu_state[PINKY].orientation));
+    // }
 
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
         printf("Spread Movement Detected: %.3f\n", 
@@ -174,23 +230,6 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     gpio_set_level(DEBUGPIN, 0); // Set the debug pin low to indicate sample processing end
 }
 
-//static const float arrow_zp[3] = {0, 0, 1}; // Local Z+ axis
-//static const float arrow_yp[3] = {0, 1, 0}; // Local Z+ axis
-// static const float axis_vectors[3][3] = {
-//     {1, 0, 0},  // AXIS_CURL   → rotation around X (finger curls)
-//     {0, 1, 0},  // AXIS_TWIST  → rotation around Y (finger twists)
-//     {0, 0, 1}   // AXIS_SPREAD → rotation around Z (fingers fan out)
-// };
-static const float x_local[3][3] = {
-    {0, 1, 0},  // AXIS_CURL → Y+ (points forward from finger)
-    {1, 0, 0}, // AXIS_TWIST → X+ (points right from finger)
-    {1, 0, 0}   // AXIS_SPREAD → X+ (points right from finger)
-};
-static const float y_local[3][3] = {
-    {0, 0, 1},  // AXIS_CURL → Z+ (points up from finger)
-    {0, 0, 1},  // AXIS_TWIST → Z+ (points up from finger)
-    {0, 1, 0}   // AXIS_SPREAD → Y+ (points forward from finger)
-};
 // This function uses quaternion orientation to detect movement (curl, splay, twist) on any axis
 // It tracks the angular velocity between world vectors rotated from local IMU axes
 // to identify significant movement start, peak, and change direction (i.e., gestures)
@@ -310,85 +349,6 @@ void track_axis_motion_quat(int imu_index, RelativeAxis which_axis, IMUState* im
     }
 }
 
-
-// This function is used to detect changes in orientation for a specific axis and IMU
-// And therefore will be called for each axis (YAW, PITCH, ROLL) and for each IMU
-// The passed in IMUState struct will be updated with the current state of the axis
-    // If the axis is still the axis angles will be set to 0
-    // If the axis is increasing or decreasing the axis will monitor the angles for a peak detected by calculating angular velocity
-    // If the axis state has peaked the axis angles will be updated with the angle difference from the start of a movement to the peak of the movement
-    // Each axis state will be set accordingly
-// It will be configured in state machine style logic
-// void axis_orientation_change(int imu_index, Axis axis, IMUState* imu_state, OrientationDatalist* orientation_data) {
-//     int cur = orientation_data[imu_index].data_index;
-//     int past = (cur + 1) % SAMPLE_SIZE_ORIENTATION; // 10 samples ago
-
-//     //angle past is 10 samples ago
-//     float angle_cur, angle_past;
-
-//     // Select the appropriate axis from OrientationData
-//     switch (axis) {
-//         case YAW:
-//             angle_cur = orientation_data[imu_index].data[cur].yaw;
-//             angle_past = orientation_data[imu_index].data[past].yaw;
-//             break;
-//         case PITCH:
-//             angle_cur = orientation_data[imu_index].data[cur].pitch;
-//             angle_past = orientation_data[imu_index].data[past].pitch;
-//             break;
-//         case ROLL:
-//             angle_cur = orientation_data[imu_index].data[cur].roll;
-//             angle_past = orientation_data[imu_index].data[past].roll;
-//             break;
-//         default:
-//             return;
-//     }
-
-//     AxisTracker* tracker = &imu_state[imu_index].axis[axis];
-//     float velocity = shortest_angle_diff(angle_cur, angle_past) / ANGLE_VELOCITY_DT; // deg/s
-//     tracker->angle_velocity = velocity;
-
-//     switch (tracker->state) {
-//         case AXIS_STILL:
-//             if (velocity > VELOCITY_THRESHOLD) {
-//                 tracker->state = AXIS_INCREASING;
-//                 tracker->start_angle = peak_angle(imu_index, axis, orientation_data, FIND_MIN); // Find the min angle in the last 10 samples
-//             } else if (velocity < -VELOCITY_THRESHOLD) {
-//                 tracker->state = AXIS_DECREASING;
-//                 tracker->start_angle = peak_angle(imu_index, axis, orientation_data, FIND_MAX); // Find the max angle in the last 10 samples
-//             }
-//             break;
-
-//         case AXIS_INCREASING:
-//             if (velocity <= 0.0f) {
-//                 tracker->state = AXIS_PEAKED;
-//                 tracker->peak_angle = peak_angle(imu_index, axis, orientation_data, FIND_MAX); // Find the max angle in the last 10 samples
-//                 tracker->angle_diff = shortest_angle_diff(tracker->peak_angle, tracker->start_angle);
-//             } else {
-//                 tracker->peak_angle = angle_cur;
-//             }
-//             break;
-
-//         case AXIS_DECREASING:
-//             if (velocity >= 0.0f) {
-//                 tracker->state = AXIS_PEAKED;
-//                 tracker->peak_angle = peak_angle(imu_index, axis, orientation_data, FIND_MIN); // Find the min angle in the last 10 samples
-//                 tracker->angle_diff = shortest_angle_diff(tracker->start_angle, tracker->peak_angle);
-//             } else {
-//                 tracker->peak_angle = angle_cur;
-//             }
-//             break;
-
-//         case AXIS_PEAKED:
-//             tracker->state = AXIS_STILL;
-//             tracker->start_angle = 0.0f;
-//             tracker->peak_angle = 0.0f;
-//             tracker->angle_diff = 0.0f;
-//             tracker->angle_velocity = 0.0f;
-//             break;
-//     }
-// }
-
 // This function is used to detect the peak angle for a specific axis and IMU within the window of 10 samples
 float peak_angle(int imu_index, Axis axis, const OrientationDatalist* orientation_data, int max_boolean) {
     int cur_index = orientation_data[imu_index].data_index;
@@ -462,6 +422,9 @@ const char* imu_orientation_str(IMUOrientation o) {
         case IMU_BACKWARD:   return "Backward Tilt";
         case FINGER_STRAIGHT:return "Straight";
         case FINGER_CURLED:  return "Curled";
+        case THUMB_EXTENDED: return "Thumb Extended";
+        case THUMB_AlIGNED:  return "Thumb Aligned";
+        case THUMB_UNDER_PALM:  return "Thumb on Palm";
         default:             return "Unknown";
     }
 }

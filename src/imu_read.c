@@ -40,11 +40,11 @@ void read_imu_data(struct IMUDatalist * imu_data, int imu_index) {
         imu_data[imu_index].data[index].gyroY  =  (burst_data[8] << 8) | burst_data[9];
         imu_data[imu_index].data[index].gyroZ  =  (burst_data[10] << 8) | burst_data[11];
         imu_data[imu_index].data[index].temp   =  (burst_data[12] << 8) | burst_data[13];
-        imu_data[imu_index].data[index].st1    =  burst_data[14]; // Read ST1 register
+        imu_data[imu_index].data[index].st1    =   burst_data[14]; // Read ST1 register
         imu_data[imu_index].data[index].magX   =  (burst_data[16] << 8) | burst_data[15];
-        imu_data[imu_index].data[index].magY   = ((burst_data[18] << 8) | burst_data[17]);
-        imu_data[imu_index].data[index].magZ   = ((burst_data[20] << 8) | burst_data[19]);
-        imu_data[imu_index].data[index].st2    =  burst_data[22]; // Read ST2 register
+        imu_data[imu_index].data[index].magY   =  (burst_data[18] << 8) | burst_data[17];
+        imu_data[imu_index].data[index].magZ   =  (burst_data[20] << 8) | burst_data[19];
+        imu_data[imu_index].data[index].st2    =   burst_data[22]; // Read ST2 register
 
         // Increment data index and wrap around if necessary
         imu_data[imu_index].data_index = (imu_data[imu_index].data_index + 1) % SAMPLE_SIZE; // Circular buffer index

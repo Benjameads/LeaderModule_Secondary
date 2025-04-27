@@ -22,8 +22,8 @@
 
 // Chip Select (CS) pins for multiple IMUs
 #define IMU_CS_BOH    GPIO_NUM_43
-#define IMU_CS_THUMB  GPIO_NUM_6
-#define IMU_CS_INDEX  GPIO_NUM_5
+#define IMU_CS_THUMB  GPIO_NUM_5
+#define IMU_CS_INDEX  GPIO_NUM_6
 #define IMU_CS_MIDDLE GPIO_NUM_4
 #define IMU_CS_RING   GPIO_NUM_3
 #define IMU_CS_PINKY  GPIO_NUM_44

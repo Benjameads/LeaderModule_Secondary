@@ -116,3 +116,29 @@ float angle_between_projected_vectors(const float a[3], const float b[3], const 
     return angle * (sign <= 0 ? 1.0f : -1.0f); // Radians
 }
 
+// Compute q_relative = conjugate(q_ref) ⊗ q_target
+void compute_relative_quaternion(const float q_ref[4], const float q_target[4], float q_relative[4]) {
+    // Compute conjugate of q_ref
+    float q_conj[4];
+    q_conj[0] =  q_ref[0];
+    q_conj[1] = -q_ref[1];
+    q_conj[2] = -q_ref[2];
+    q_conj[3] = -q_ref[3];
+
+    // Multiply conjugate(q_ref) * q_target
+    q_relative[0] = q_conj[0]*q_target[0] - q_conj[1]*q_target[1] - q_conj[2]*q_target[2] - q_conj[3]*q_target[3]; // w
+    q_relative[1] = q_conj[0]*q_target[1] + q_conj[1]*q_target[0] + q_conj[2]*q_target[3] - q_conj[3]*q_target[2]; // x
+    q_relative[2] = q_conj[0]*q_target[2] - q_conj[1]*q_target[3] + q_conj[2]*q_target[0] + q_conj[3]*q_target[1]; // y
+    q_relative[3] = q_conj[0]*q_target[3] + q_conj[1]*q_target[2] - q_conj[2]*q_target[1] + q_conj[3]*q_target[0]; // z
+
+    // (Optional but good practice) Normalize q_relative to ensure unit quaternion
+    float norm = sqrtf(q_relative[0]*q_relative[0] + q_relative[1]*q_relative[1] + q_relative[2]*q_relative[2] + q_relative[3]*q_relative[3]);
+    if (norm > 0.0f) {
+        q_relative[0] /= norm;
+        q_relative[1] /= norm;
+        q_relative[2] /= norm;
+        q_relative[3] /= norm;
+    }
+}
+
+

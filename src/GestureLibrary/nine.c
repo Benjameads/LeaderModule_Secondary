@@ -3,7 +3,7 @@
 
 GestureState nine(IMUState* imu_state)
 {
-    if ((imu_state[THUMB].orientation == FINGER_CURLED) &&
+    if ((imu_state[THUMB].orientation != THUMB_EXTENDED) &&
         (imu_state[MIDDLE].orientation == FINGER_STRAIGHT) &&
         (imu_state[INDEX].orientation == FINGER_STRAIGHT) &&
         (imu_state[RING].orientation == FINGER_STRAIGHT) &&

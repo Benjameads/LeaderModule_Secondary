@@ -52,16 +52,11 @@ typedef struct {
     float smoothed_velocity;  // NEW: for EMA smoothing
     float start_quat[4]; // Start quaternion for the axis
     float peak_quat[4];  // Stop quaternion for the axis
-    // float start_vector[3]; // Start vector for the axis
-    // float peak_vector[3];  // Stop vector for the axis
     float possible_peak_angle; // Angle difference between start and stop vector
     float prev_peak_angle; // Angle at the peak
     float angle_diff;
     int reversal_counter;
     AxisState state, restore_state;
-
-    float x_world_start[3]; // X vector in world frame
-    float y_world_start[3]; // Y vector in world frame
 } AxisTracker;
 
 
@@ -73,7 +68,11 @@ typedef enum {
     IMU_FORWARD, // IMU is tilted forward
     IMU_BACKWARD, // IMU is tilted backward
     FINGER_STRAIGHT,
-    FINGER_CURLED
+    FINGER_CURLED,
+    THUMB_EXTENDED,
+    THUMB_AlIGNED,
+    THUMB_UNDER_PALM,
+    IMU_ORIENTATION_UNKNOWN
 } IMUOrientation;
 
 typedef enum {

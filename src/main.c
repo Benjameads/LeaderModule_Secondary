@@ -74,6 +74,7 @@ void app_main() {
 
     ESP_LOGI(TAG, "Initializing IMUs");
     setup_imu(imu_handles, 0);
+    setup_imu(imu_handles, 1); // Set up the first IMU
     for (int i = 0; i < 6; i++) {
         setup_imu(imu_handles, i); // Set up each IMU
     }
