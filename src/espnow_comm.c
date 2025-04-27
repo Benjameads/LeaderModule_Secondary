@@ -7,6 +7,7 @@
 
 #define GESTURE_QUEUE_SIZE 10 // Size of the gesture queue
 
+//static uint8_t audio_mac[] = {0x74, 0x4d, 0xbd, 0x81, 0x6d, 0x18}; // MAC address of Primary Leader Module (ie. Right Glove)
 static uint8_t audio_mac[] = {0x98, 0x3D, 0xAE, 0xE7, 0x9B, 0x60}; // MAC address of uController 2 (ie. Audio Module)
 static esp_now_peer_info_t peerInfo;
 

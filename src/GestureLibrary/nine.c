@@ -8,7 +8,7 @@ GestureState nine(IMUState* imu_state)
         (imu_state[INDEX].orientation == FINGER_STRAIGHT) &&
         (imu_state[RING].orientation == FINGER_STRAIGHT) &&
         (imu_state[PINKY].orientation == FINGER_STRAIGHT) &&
-        (imu_state[BOH].orientation == IMU_RIGHT))
+        (imu_state[BOH].orientation == IMU_LEFT))
     {
         send_gesture_byte('q'); // Send the gesture to the audio module //ascii value of 'F' is 70
         printf("Three gesture detected!\n"); // Print message indicating gesture detection

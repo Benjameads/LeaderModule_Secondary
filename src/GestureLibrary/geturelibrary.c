@@ -142,9 +142,9 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     float thumb_spread = rotation_about_axis(q_boh, q_thumb, thumb_x_local, thumb_y_local);
     //float thumb_curl = rotation_about_axis(q_boh, q_thumb, x_local[AXIS_CURL], y_local[AXIS_CURL]);
 
-    if(thumb_spread > 0.15f) {
+    if(thumb_spread > -0.5f) {
         imu_state[THUMB].orientation = THUMB_EXTENDED;
-    } else if (thumb_spread < -0.5f) {
+    } else if (thumb_spread < 0.15f) {
         imu_state[THUMB].orientation = THUMB_UNDER_PALM;
     } else {
         imu_state[THUMB].orientation = THUMB_AlIGNED;
