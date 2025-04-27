@@ -123,4 +123,5 @@ GestureState seven(IMUState* imu_state);
 GestureState eight(IMUState* imu_state);
 GestureState nine(IMUState* imu_state);
 GestureState enemy_in_sight(IMUState* imu_state);
+GestureState followme(IMUState* imu_state);
 #endif

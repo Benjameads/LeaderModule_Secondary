@@ -41,7 +41,7 @@ GestureState disperse(IMUState *imu_state)
                 if (RAD2DEG(tracker->angle_diff) >= -DISP_BACK_THRESHOLD_DEG) 
                 {
                     // Gesture complete!
-                    send_gesture_byte('B');
+                    send_gesture_byte('A');
                     printf("Disperse gesture completed\n");
                     disp_state = DISP_STATE_OUTWARD;
                     return GESTURE_COMPLETE;

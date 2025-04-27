@@ -51,17 +51,18 @@ void gesture_worker_task(void* arg) {
         // // Call the gesture functions to process the gesture data
         // disperse_state = disperse(gesture_data);
         disperse(imu_state); // Call the disperse function to check for the disperse gesture
-        // freeze(imu_state); // Call the freeze function to check for the freeze gesture
-        // one(imu_state); // Call the one function to check for the one gesture
-        // two(imu_state); // Call the two function to check for the two gesture
-        // three(imu_state); // Call the three function to check for the three gesture
-        // four(imu_state); // Call the four function to check for the four gesture
-        // five(imu_state); // Call the five function to check for the five gesture
-        // six(imu_state); // Call the six function to check for the six gesture
-        // seven(imu_state); // Call the seven function to check for the seven gesture
-        // eight(imu_state); // Call the eight function to check for the eight gesture
-        // nine(imu_state); // Call the nine function to check for the nine gesture
-        // the_bird(imu_state); // Call the the_bird function to check for the bird gesture
+        followme(imu_state); // Call the followme function to check for the followme gesture
+        freeze(imu_state); // Call the freeze function to check for the freeze gesture
+        one(imu_state); // Call the one function to check for the one gesture
+        two(imu_state); // Call the two function to check for the two gesture
+        three(imu_state); // Call the three function to check for the three gesture
+        four(imu_state); // Call the four function to check for the four gesture
+        five(imu_state); // Call the five function to check for the five gesture
+        six(imu_state); // Call the six function to check for the six gesture
+        seven(imu_state); // Call the seven function to check for the seven gesture
+        eight(imu_state); // Call the eight function to check for the eight gesture
+        nine(imu_state); // Call the nine function to check for the nine gesture
+        the_bird(imu_state); // Call the the_bird function to check for the bird gesture
 
     }
 }
@@ -202,14 +203,17 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
         printf("Spread Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
+        printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
         printf("Curl Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
+            printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
         printf("Twist Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
+            printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     // if(count == 0) {
     //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
