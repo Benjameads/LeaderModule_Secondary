@@ -187,29 +187,29 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
         // axis_orientation_change(i, ROLL, &imu_state[i], orientation_data);
     }
 
-    // if(count == 0) {
-    //     // Print the all relative orientations for debugging
-    //     printf("BOH: %s, THUMB: %s, INDEX: %s, MIDDLE: %s, RING: %s, PINKY: %s\n", 
-    //         imu_orientation_str(imu_state[BOH].orientation), 
-    //         imu_orientation_str(imu_state[THUMB].orientation),
-    //         imu_orientation_str(imu_state[INDEX].orientation),
-    //         imu_orientation_str(imu_state[MIDDLE].orientation),
-    //         imu_orientation_str(imu_state[RING].orientation),
-    //         imu_orientation_str(imu_state[PINKY].orientation));
-    // }
+    if(count == 0) {
+        // Print the all relative orientations for debugging
+        printf("BOH: %s, THUMB: %s, INDEX: %s, MIDDLE: %s, RING: %s, PINKY: %s\n", 
+            imu_orientation_str(imu_state[BOH].orientation), 
+            imu_orientation_str(imu_state[THUMB].orientation),
+            imu_orientation_str(imu_state[INDEX].orientation),
+            imu_orientation_str(imu_state[MIDDLE].orientation),
+            imu_orientation_str(imu_state[RING].orientation),
+            imu_orientation_str(imu_state[PINKY].orientation));
+    }
 
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
-        printf("Spread Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
-    }
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
-        printf("Curl Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
-    }
-    if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
-        printf("Twist Movement Detected: %.3f\n", 
-            RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
-    }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
+    //     printf("Spread Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
+    // }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
+    //     printf("Curl Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
+    // }
+    // if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
+    //     printf("Twist Movement Detected: %.3f\n", 
+    //         RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
+    // }
     // if(count == 0) {
     //     printf("BOH Orientation: %s, x: %.3f, y: %.3f, z: %.3f \n", imu_orientation_str(imu_state[BOH].orientation), boh_y_world[0], boh_y_world[1], boh_y_world[2]);
     // }

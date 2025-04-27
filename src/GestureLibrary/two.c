@@ -8,8 +8,8 @@ GestureState two(IMUState* imu_state)
         (imu_state[INDEX].orientation == FINGER_STRAIGHT) &&
         (imu_state[RING].orientation == FINGER_CURLED) &&
         (imu_state[PINKY].orientation == FINGER_CURLED) &&
-        (imu_state[BOH].orientation == IMU_FLAT_UP) &&
-        (imu_state[BOH].axis[ROLL].angle_diff < 10))
+        (imu_state[BOH].orientation == IMU_BACKWARD) /*&&
+        (imu_state[BOH].axis[ROLL].angle_diff < 10)*/)
     {
         send_gesture_byte('j'); // Send the gesture to the audio module //ascii value of 'F' is 70
         printf("Two gesture detected!\n"); // Print message indicating gesture detection
