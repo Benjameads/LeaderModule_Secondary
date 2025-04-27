@@ -110,7 +110,6 @@ const char* imu_orientation_str(IMUOrientation o);
 const char* axis_state_str(AxisState s);
 
 GestureState the_bird(IMUState* imu_state);
-//GestureState disperse(GestureOrientationData* gesture_data);
 GestureState disperse(IMUState* imu_state);
 GestureState freeze(IMUState* imu_state);
 GestureState one(IMUState* imu_state);
