@@ -3,7 +3,7 @@
 
 GestureState message_acknowledged(IMUState* imu_state)
 {
-    if ((imu_state[THUMB].orientation == FINGER_STRAIGHT) &&
+    if ((imu_state[THUMB].orientation == THUMB_EXTENDED) &&
         (imu_state[MIDDLE].orientation == FINGER_CURLED) &&
         (imu_state[INDEX].orientation == FINGER_CURLED) &&
         (imu_state[RING].orientation == FINGER_CURLED) &&

@@ -21,7 +21,7 @@ GestureState column_formation(IMUState *imu_state)
     switch (state) {
         //stage 1: hand moves from flat imu down in front of body to palm infront of face
         case STATE_STAGE1:
-            if (tracker->state == AXIS_PEAKED && imu_state[BOH].orientation == IMU_BACKWARD) 
+            if (tracker->state == AXIS_PEAKED && imu_state[BOH].orientation == IMU_RIGHT) 
             {
                 if (RAD2DEG(tracker->angle_diff) <= -SPREAD_THRESH) {
                     state = STATE_STAGE2;
