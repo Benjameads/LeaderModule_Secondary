@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "imu_read.h": "c",
-        "cmath": "c"
+        "cmath": "c",
+        "gesturelibrary.h": "c"
     }
 }
