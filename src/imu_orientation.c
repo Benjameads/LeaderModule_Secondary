@@ -7,17 +7,17 @@
 #define RAD2DEG(x) ((x) * 57.2957795f)
 
 void update_imu_orientation_from_raw( Madgwick* filter, const struct IMUData* sample, float dt, float* yaw_deg, float* pitch_deg, float* roll_deg) {
-    float ax = sample->accelX * ACCEL_4G_SCALE;
-    float ay = sample->accelY * ACCEL_4G_SCALE;
-    float az = sample->accelZ * ACCEL_4G_SCALE;
+    float ax = (float)sample->accelX * ACCEL_4G_SCALE;
+    float ay = (float)sample->accelY * ACCEL_4G_SCALE;
+    float az = (float)sample->accelZ * ACCEL_4G_SCALE;
 
-    float gx = sample->gyroX * GYRO_500_SCALE_RAD;
-    float gy = sample->gyroY * GYRO_500_SCALE_RAD;
-    float gz = sample->gyroZ * GYRO_500_SCALE_RAD;
+    float gx = (float)sample->gyroX * GYRO_500_SCALE;
+    float gy = (float)sample->gyroY * GYRO_500_SCALE;
+    float gz = (float)sample->gyroZ * GYRO_500_SCALE;
 
-    float mx = sample->magX * MAG_SCALE;
-    float my = sample->magY * MAG_SCALE;
-    float mz = sample->magZ * MAG_SCALE;
+    float mx = (float)sample->magX * MAG_SCALE;
+    float my = -(float)sample->magY * MAG_SCALE;
+    float mz = -(float)sample->magZ * MAG_SCALE;
 
     filter->sampleFreq = 1.0f / dt;
 

@@ -38,6 +38,15 @@ struct IMUDatalist {
     spi_device_handle_t spi; // SPI device handle for the IMU
 };
 
+typedef enum {
+    BOH,
+    THUMB,
+    INDEX,
+    MIDDLE,
+    RING,
+    PINKY
+} IMU_INDEX;
+
 //extern struct IMUDatalist imu_data[NUMBER_OF_IMUS];
 
 void read_imu_data(struct IMUDatalist * imu_data, int imu_index);

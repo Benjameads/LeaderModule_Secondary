@@ -4,6 +4,7 @@
 
 typedef struct {
     float sampleFreq;
+    float samplePeriod;
     float beta;
     float q[4]; // quaternion of sensor frame relative to auxiliary frame
 } Madgwick;
