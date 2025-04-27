@@ -39,8 +39,8 @@ GestureState take_cover(IMUState *imu_state)
                 if (RAD2DEG(tracker->angle_diff) >= CURL_THRESH) 
                 {
                     // Gesture complete!
-                    send_gesture_byte('O');
-                    printf("Follow Me gesture completed\n");
+                    send_gesture_byte('S');
+                    printf("Take Cover gesture completed\n");
                     state = STATE_STAGE1;
                     return GESTURE_COMPLETE;
                 } else 
