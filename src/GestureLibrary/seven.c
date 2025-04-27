@@ -10,7 +10,7 @@ GestureState seven(IMUState* imu_state)
         (imu_state[PINKY].orientation == FINGER_CURLED) &&
         (imu_state[BOH].orientation == IMU_LEFT))
     {
-        send_gesture_byte('O'); // Send the gesture to the audio module //ascii value of 'F' is 70
+        send_gesture_byte('o'); // Send the gesture to the audio module //ascii value of 'F' is 70
         printf("Seven gesture detected!\n"); // Print message indicating gesture detection
         return GESTURE_COMPLETE;
     } 
