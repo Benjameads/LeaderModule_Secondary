@@ -63,7 +63,7 @@ void gesture_worker_task(void* arg) {
         eight(imu_state); // Call the eight function to check for the eight gesture
         nine(imu_state); // Call the nine function to check for the nine gesture
         the_bird(imu_state); // Call the the_bird function to check for the bird gesture
-
+        assemble(imu_state); // Call the assemble function to check for the assemble gesture
     }
 }
 
