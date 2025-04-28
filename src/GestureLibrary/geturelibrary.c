@@ -63,7 +63,13 @@ void gesture_worker_task(void* arg) {
         eight(imu_state); // Call the eight function to check for the eight gesture
         nine(imu_state); // Call the nine function to check for the nine gesture
         the_bird(imu_state); // Call the the_bird function to check for the bird gesture
-
+        assemble(imu_state); // Call the assemble function to check for the assemble gesture
+        danger_area(imu_state); // Call the danger_area function to check for the danger area gesture
+        wedge_formation(imu_state); // Call the wedge_formation function to check for the wedge formation gesture
+        vee_formation(imu_state); // Call the vee_formation function to check for the vee formation gesture
+        column_formation(imu_state); // Call the column_formation function to check for the column formation gesture
+        message_acknowledged(imu_state); // Call the message_acknowledged function to check for the message acknowledged gesture
+        take_cover(imu_state); // Call the take_cover function to check for the take cover gesture
     }
 }
 
@@ -203,16 +209,24 @@ void imu_orientation_detection(IMUState* imu_state, OrientationDatalist* orienta
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_SPREAD].state) {
         printf("Spread Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_SPREAD].angle_diff));
-        printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_CURL].state) {
         printf("Curl Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_CURL].angle_diff));
-            printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     if(AXIS_PEAKED == imu_state[BOH].axis[AXIS_TWIST].state) {
         printf("Twist Movement Detected: %.3f\n", 
             RAD2DEG(imu_state[BOH].axis[AXIS_TWIST].angle_diff));
+    }
+    if(imu_state[BOH].axis[AXIS_SPREAD].state == AXIS_PEAKED || imu_state[BOH].axis[AXIS_CURL].state == AXIS_PEAKED || imu_state[BOH].axis[AXIS_TWIST].state == AXIS_PEAKED) {
+        // Print the all relative orientations for debugging
+        printf("BOH: %s, THUMB: %s, INDEX: %s, MIDDLE: %s, RING: %s, PINKY: %s\n", 
+            imu_orientation_str(imu_state[BOH].orientation), 
+            imu_orientation_str(imu_state[THUMB].orientation),
+            imu_orientation_str(imu_state[INDEX].orientation),
+            imu_orientation_str(imu_state[MIDDLE].orientation),
+            imu_orientation_str(imu_state[RING].orientation),
+            imu_orientation_str(imu_state[PINKY].orientation));
             printf("BOH Orientation: %s\n", imu_orientation_str(imu_state[BOH].orientation));
     }
     // if(count == 0) {

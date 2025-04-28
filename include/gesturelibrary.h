@@ -110,7 +110,6 @@ const char* imu_orientation_str(IMUOrientation o);
 const char* axis_state_str(AxisState s);
 
 GestureState the_bird(IMUState* imu_state);
-//GestureState disperse(GestureOrientationData* gesture_data);
 GestureState disperse(IMUState* imu_state);
 GestureState freeze(IMUState* imu_state);
 GestureState one(IMUState* imu_state);
@@ -124,4 +123,11 @@ GestureState eight(IMUState* imu_state);
 GestureState nine(IMUState* imu_state);
 GestureState enemy_in_sight(IMUState* imu_state);
 GestureState followme(IMUState* imu_state);
+GestureState assemble(IMUState* imu_state);
+GestureState wedge_formation(IMUState* imu_state);
+GestureState vee_formation(IMUState* imu_state);
+GestureState column_formation(IMUState *imu_state);
+GestureState message_acknowledged(IMUState* imu_state);
+GestureState take_cover(IMUState *imu_state);
+GestureState danger_area(IMUState *imu_state);
 #endif
