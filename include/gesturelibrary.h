@@ -129,4 +129,5 @@ GestureState vee_formation(IMUState* imu_state);
 GestureState column_formation(IMUState *imu_state);
 GestureState message_acknowledged(IMUState* imu_state);
 GestureState take_cover(IMUState *imu_state);
+GestureState danger_area(IMUState *imu_state);
 #endif
