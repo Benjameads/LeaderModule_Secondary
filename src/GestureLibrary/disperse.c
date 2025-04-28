@@ -24,7 +24,7 @@ GestureState disperse(IMUState *imu_state)
             if (tracker->state == AXIS_PEAKED && imu_state[BOH].orientation == IMU_FLAT_UP) 
             {
                 // Check if we moved far enough
-                if (RAD2DEG(tracker->angle_diff) <= DISP_OUT_THRESHOLD_DEG) 
+                if (RAD2DEG(tracker->angle_diff) >= -DISP_OUT_THRESHOLD_DEG) 
                 {
                     disp_state = DISP_STATE_RETURN;
                 } else {
@@ -38,7 +38,7 @@ GestureState disperse(IMUState *imu_state)
         case DISP_STATE_RETURN:
             if (tracker->state == AXIS_PEAKED && imu_state[BOH].orientation == IMU_FLAT_UP) 
             {
-                if (RAD2DEG(tracker->angle_diff) >= -DISP_BACK_THRESHOLD_DEG) 
+                if (RAD2DEG(tracker->angle_diff) <= DISP_BACK_THRESHOLD_DEG) 
                 {
                     // Gesture complete!
                     send_gesture_byte('A');
