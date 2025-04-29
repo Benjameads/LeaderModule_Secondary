@@ -11,7 +11,7 @@ GestureState vee_formation(IMUState* imu_state)
         (imu_state[BOH].orientation == IMU_BACKWARD))
     {
         send_gesture_byte('E'); // Send the gesture to the audio module //ascii value of 'F' is 70
-        printf("Wedge Formation gesture detected!\n"); // Print message indicating gesture detection
+        printf("Vee Formation gesture detected!\n"); // Print message indicating gesture detection
         return GESTURE_COMPLETE;
     } 
     else 

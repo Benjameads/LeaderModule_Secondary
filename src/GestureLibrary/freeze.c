@@ -3,8 +3,7 @@
 
 GestureState freeze(IMUState* imu_state)
 {
-    if ((imu_state[THUMB].orientation == THUMB_AlIGNED) &&
-        (imu_state[MIDDLE].orientation == FINGER_CURLED) &&
+    if ((imu_state[MIDDLE].orientation == FINGER_CURLED) &&
         (imu_state[INDEX].orientation == FINGER_CURLED) &&
         (imu_state[RING].orientation == FINGER_CURLED) &&
         (imu_state[PINKY].orientation == FINGER_CURLED) &&
